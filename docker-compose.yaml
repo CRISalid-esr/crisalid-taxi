@@ -14,5 +14,11 @@ services:
       - API_PORT=8000
       - LOG_LEVEL=INFO
     volumes:
-      - ./app:/app/app
-    command: python -m app.main
+      - ./app:/code/app
+    networks:
+      - crisalid-taxi-net
+
+networks:
+  crisalid-taxi-net:
+    driver: bridge
+
