@@ -6,11 +6,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Install uv
+RUN pip install --no-cache-dir uv
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml and uv.lock
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using uv
+RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY app/ ./app/
@@ -23,4 +26,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Run the application
-CMD ["python", "-m", "app.main"]
+CMD ["uv", "run", "python", "-m", "app.main"]
