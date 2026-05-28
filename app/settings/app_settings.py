@@ -39,10 +39,8 @@ class AppSettings(BaseSettings):
         :param yml_file: Path to the YAML file
         :return: Dictionary loaded from YAML file
         """
-        if not os.path.exists(yml_file):
-            return {}
         with open(yml_file, encoding="utf8") as file:
-            return yaml.load(file, Loader=yaml.FullLoader) or {}
+            return yaml.load(file, Loader=yaml.FullLoader)
 
     @field_validator("app_env", mode="before")
     @classmethod
@@ -62,9 +60,6 @@ class AppSettings(BaseSettings):
     # API Configuration
     api_prefix: str = "/api"
     api_version: str = "v1"
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    api_title: str = "CRISalid Taxi API"
 
     # Application metadata
     git_commit: str = "-"
