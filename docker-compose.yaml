@@ -9,12 +9,35 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=${APP_ENV:-dev}
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - APP_ENV=${APP_ENV}
+      - API_HOST=${API_HOST}
+      - API_PORT=${API_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
     volumes:
       - ./app:/code/app
+    networks:
+      - crisalid-taxi-net
+    depends_on:
+      opensearch:
+        condition: service_started
+
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: crisalid-taxi-opensearch
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      - cluster.name=${OPENSEARCH_CLUSTER_NAME}
+      - node.name=${OPENSEARCH_NODE_NAME}
+      - discovery.type=${OPENSEARCH_DISCOVERY_TYPE}
+      - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS}
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - plugins.security.disabled=${OPENSEARCH_SECURITY_DISABLED}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     networks:
       - crisalid-taxi-net
 

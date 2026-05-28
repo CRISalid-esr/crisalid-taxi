@@ -38,18 +38,37 @@ docker-compose up -d
 Cela va :
 - Construire l'image Docker de l'API FastAPI
 - Démarrer l'API sur le port 8000
+- Démarrer OpenSearch 2.11.0 sur le port 9200
 
 ### 3. Vérifier que tout fonctionne
 
 **Vérifier la santé de l'API** :
 ```bash
-curl http://localhost:8000/health/
+curl http://localhost:8000/
 ```
 
 Réponse attendue :
 ```json
 {
-  "status": "OK"
+  "version": "1.0.0",
+  "title": "CRISalid Taxi API"
+}
+```
+
+**Vérifier la santé d'OpenSearch** :
+```bash
+curl http://localhost:9200/
+```
+
+Réponse attendue :
+```json
+{
+  "name": "opensearch-node",
+  "cluster_name": "opensearch-cluster",
+  "version": {
+    "number": "2.11.0",
+    ...
+  }
 }
 ```
 
@@ -92,7 +111,37 @@ cp .env.sample .env
 uv run uvicorn app.crisalid_taxi:CrisalidTaxi --reload
 ```
 
-## 📦 Dépendances
+## � OpenSearch
+
+OpenSearch 2.11.0 est inclus dans le docker-compose pour la recherche et indexation de la taxonomie.
+
+### Endpoints OpenSearch
+
+- **REST API** : http://localhost:9200
+- **Performance Analyzer** : http://localhost:9600
+
+### Commandes utiles
+
+```bash
+# Vérifier l'état du cluster
+curl http://localhost:9200/_cluster/health
+
+# Lister les indices
+curl http://localhost:9200/_cat/indices
+
+# Créer un test index
+curl -X PUT http://localhost:9200/test-index
+
+# Ajouter un document
+curl -X POST http://localhost:9200/test-index/_doc \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Test", "value": 123}'
+
+# Rechercher les documents
+curl http://localhost:9200/test-index/_search
+```
+
+## �📦 Dépendances
 
 - **fastapi** : Framework web API
 - **uvicorn** : Serveur ASGI
