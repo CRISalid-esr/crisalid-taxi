@@ -2,9 +2,11 @@
 from fastapi import APIRouter
 
 from app.routes.health import router as health_router
+from app.routes.test import router as test_router
 
 # Create main router
 router = APIRouter()
 
 # Include sub-routers
-router.include_router(health_router, prefix="", tags=["health"])
+router.include_router(health_router, prefix="/health", tags=["health"])
+router.include_router(test_router, prefix="/test", tags=["test"])

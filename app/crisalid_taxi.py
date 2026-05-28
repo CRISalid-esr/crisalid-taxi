@@ -3,11 +3,18 @@ import sys
 
 from fastapi import FastAPI
 from loguru import logger
+from pydantic import BaseModel
 
 from app.config import settings
 from app.routes.api import router as api_router
-from app.routes.health import router as health_router
 from app.settings.app_env_types import AppEnvTypes
+
+
+class RootResponse(BaseModel):
+    """Response model for root endpoint."""
+
+    version: str
+    title: str
 
 
 class CrisalidTaxi(FastAPI):
@@ -30,10 +37,16 @@ class CrisalidTaxi(FastAPI):
             )
 
         # Include routers
-        self.include_router(
-            api_router,
-            prefix="/api/v1",
-        )
-        self.include_router(health_router, prefix="/health", tags=["health"])
+        self.include_router(api_router, prefix="/api/v1")
+
+        # Root endpoint
+        @self.get("/", response_model=RootResponse)
+        async def root() -> RootResponse:
+            """Root endpoint returning API information."""
+            logger.info("Root endpoint called")
+            return RootResponse(
+                version=self.version,
+                title=self.title,
+            )
 
         logger.info("Application CRISalid Taxi initialized")

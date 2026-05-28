@@ -30,4 +30,4 @@ async def get_health() -> HealthCheck:
         HealthCheck: Returns a JSON response with the health status
     """
     logger.info("Health check performed")
-    return HealthCheck(status="OK")
+    return HealthCheck(status="healthy")

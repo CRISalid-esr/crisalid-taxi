@@ -17,7 +17,7 @@ from app.settings.app_env_types import AppEnvTypes
 class AppSettings(BaseSettings):
     """App settings main class with parameters definition."""
     
-    model_config = ConfigDict(env_file=".env", case_sensitive=False)
+    model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     @staticmethod
     def settings_file_path(filename: str) -> str:
