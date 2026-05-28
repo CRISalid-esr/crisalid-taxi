@@ -18,14 +18,6 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
 
-    # Database Configuration - Load from environment variables only
-    DATABASE_URL: str = ""
-    DB_HOST: str = "localhost"
-    DB_PORT: int = 5432
-    DB_USER: str = ""
-    DB_PASSWORD: str = ""
-    DB_NAME: str = ""
-
     class Config:
         """Pydantic configuration."""
 

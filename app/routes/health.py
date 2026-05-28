@@ -1,38 +1,33 @@
-"""Health check routes."""
+"""Health Check Route."""
+from fastapi import status, APIRouter
+from loguru import logger
+from pydantic import BaseModel
 
-from fastapi import APIRouter
 
-router = APIRouter(prefix="/api/v1", tags=["health"])
+class HealthCheck(BaseModel):
+    """Response model to validate and return when performing a health check."""
+
+    status: str = "OK"
+
+
+router = APIRouter()
 
 
 @router.get(
-    "/health",
-    summary="Vérification de santé",
-    description="Endpoint pour vérifier l'état et la disponibilité du service.",
-    responses={
-        200: {
-            "description": "Service en bonne santé",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "status": "healthy",
-                        "service": "crisalid-taxi",
-                    }
-                }
-            },
-        }
-    },
+    "/",
+    tags=["healthcheck"],
+    summary="Perform a Health Check",
+    response_description="Return HTTP Status Code 200 (OK)",
+    status_code=status.HTTP_200_OK,
+    response_model=HealthCheck,
 )
-async def health_check():
-    """Vérification de santé du service.
-    
-    Cet endpoint retourne l'état du service et confirme que l'API fonctionne correctement.
-    
-    ### Réponse
-    - **status** (str): État du service ("healthy", "degraded", "unhealthy")
-    - **service** (str): Nom du service
+async def get_health() -> HealthCheck:
     """
-    return {
-        "status": "healthy",
-        "service": "crisalid-taxi",
-    }
+    ## Perform a Health Check
+    Endpoint to perform a healthcheck on.
+
+    Returns:
+        HealthCheck: Returns a JSON response with the health status
+    """
+    logger.info("Health check performed")
+    return HealthCheck(status="OK")

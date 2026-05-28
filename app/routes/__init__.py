@@ -1,5 +1,5 @@
 # Routes module
 
-from . import health, test
+from . import health
 
-__all__ = ["health", "test"]
+__all__ = ["health"]
