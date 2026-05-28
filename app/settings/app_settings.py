@@ -8,7 +8,7 @@ import os
 from typing import ClassVar, TextIO
 
 import yaml
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 from pydantic_settings import BaseSettings
 
 from app.settings.app_env_types import AppEnvTypes
@@ -16,6 +16,8 @@ from app.settings.app_env_types import AppEnvTypes
 
 class AppSettings(BaseSettings):
     """App settings main class with parameters definition."""
+    
+    model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
     @staticmethod
     def settings_file_path(filename: str) -> str:
@@ -68,10 +70,3 @@ class AppSettings(BaseSettings):
     git_commit: str = "-"
     git_branch: str = "-"
     docker_digest: str = "-"
-
-    class Config:
-        """Pydantic configuration."""
-
-        env_file = ".env"
-        case_sensitive = False
-

@@ -13,12 +13,11 @@ from app.settings.app_env_types import AppEnvTypes
 class CrisalidTaxi(FastAPI):
     """Main application, routing logic, middlewares and startup/shutdown events"""
 
-    def __init__(self):
-        super().__init__(
-            title="CRISalid Taxi API",
-            description="API pour la gestion de la taxonomie OpenAlex",
-            version="1.0.0",
-        )
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("title", "CRISalid Taxi API")
+        kwargs.setdefault("description", "API pour la gestion de la taxonomie OpenAlex")
+        kwargs.setdefault("version", "1.0.0")
+        super().__init__(*args, **kwargs)
         settings_instance = settings
 
         # Configure logging avec loguru
