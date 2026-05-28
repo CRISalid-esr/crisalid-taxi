@@ -1,5 +1,7 @@
 # crisalid-taxi
 
+Microservice FastAPI pour la gestion de la taxonomie OpenAlex. API minimale et extensible.
+
 ## 📋 Prérequis
 
 - Docker et Docker Compose installés
@@ -16,58 +18,49 @@ Copier le fichier template `.env.sample` en `.env.local` :
 cp .env.sample .env.local
 ```
 
-Puis éditer `.env.local` et remplir les variables :
+Le fichier `.env.local` contient :
 
 ```env
 APP_ENV=DEV
 API_HOST=0.0.0.0
 API_PORT=8000
-LOG_LEVEL=INFO
-
-# Database
-DB_USER=crisalid_user
-DB_PASSWORD=votre_mot_de_passe_securise
-DB_NAME=crisalid_db
+API_TITLE=CRISalid Taxi API
+API_VERSION=0.1.0
+LOG_LEVEL=DEBUG
 ```
 
-### 2. Démarrer les services avec Docker Compose
+### 2. Démarrer l'API avec Docker Compose
 
 ```bash
 docker-compose up -d
 ```
 
 Cela va :
-- Créer et démarrer le service PostgreSQL sur le port 5432
-- Créer et démarrer l'API FastAPI sur le port 8000
-- Créer un volume persistant pour les données PostgreSQL
+- Construire l'image Docker de l'API FastAPI
+- Démarrer l'API sur le port 8000
 
 ### 3. Vérifier que tout fonctionne
 
 **Vérifier la santé de l'API** :
 ```bash
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/health/
 ```
 
 Réponse attendue :
 ```json
 {
-  "status": "healthy",
-  "service": "crisalid-taxi"
+  "status": "OK"
 }
 ```
 
 **Accéder à la documentation Swagger** :
 - Ouvrir http://localhost:8000/docs dans le navigateur
+- Voir aussi ReDoc à http://localhost:8000/redoc
 
 ### 4. Arrêter les services
 
 ```bash
 docker-compose down
-```
-
-Pour arrêter et supprimer les données persistantes :
-```bash
-docker-compose down -v
 ```
 
 ## 📚 Documentation API
@@ -96,24 +89,55 @@ cp .env.sample .env
 ### Démarrer l'API
 
 ```bash
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.crisalid_taxi:CrisalidTaxi --reload
 ```
 
-L'API sera accessible à http://localhost:8000
+## 🏗️ Architecture du projet
 
-## 🔒 Sécurité
+```
+app/
+├── main.py                 # Point d'entrée minimaliste
+├── crisalid_taxi.py        # Classe principale FastAPI
+├── config.py               # Configuration centralisée
+├── routes/
+│   ├── api.py              # Routeur maître
+│   └── health.py           # Endpoint santé
+├── settings/
+│   └── app_env_types.py    # Types d'environnement
+├── db/                     # (À venir) Couche BD
+├── models/                 # (À venir) Modèles ORM
+├── services/               # (À venir) Logique métier
+└── utils/
+    └── helpers.py          # Utilitaires
+```
 
-- **Secrets** : Tous les secrets (DB_PASSWORD, etc.) sont gérés par variables d'environnement
+## 📦 Dépendances
+
+- **fastapi** : Framework web API
+- **uvicorn** : Serveur ASGI
+- **pydantic** : Validation des données
+- **loguru** : Logging structuré
+- **python-dotenv** : Configuration environnement
+- **httpx** : Client HTTP
+
+## 🔄 Prochaines étapes
+
+- [ ] Intégrer une base de données (PostgreSQL/MongoDB/etc.)
+- [ ] Implémenter les modèles de données (Domain, Field, Subfield, Topic, Keyword)
+- [ ] Créer les endpoints API pour la taxonomie CRUD
+- [ ] Ajouter les migrations de BD (Alembic)
+- [ ] Écrire les tests (pytest)
+- [ ] Ajouter l'authentification/autorisation
+
+## � Sécurité
+
+- **Secrets** : Tous les secrets sont gérés par variables d'environnement
 - **Fichiers d'environnement** : `.env.local` et `.env` sont ignorés dans git
 - **Configuration** : Utilisez `.env.sample` comme template, jamais commit de vrais secrets
 
-Voir [SECURITY.md](SECURITY.md) pour plus de détails sur la gestion des secrets.
+## 📝 License
 
-## 📦 Dépendances principales
-
-- **FastAPI** 0.104.1 - Framework web moderne
-- **PostgreSQL** 16 - Base de données
-- **SQLAlchemy** 2.0.23 - ORM Python
+MIT
 - **Pydantic** - Validation de données
 - **Docker** - Conteneurisation
 

@@ -10,7 +10,7 @@ from app.routes.health import router as health_router
 from app.settings.app_env_types import AppEnvTypes
 
 
-class TaxiSearch(FastAPI):
+class CrisalidTaxi(FastAPI):
     """Main application, routing logic, middlewares and startup/shutdown events"""
 
     def __init__(self):
