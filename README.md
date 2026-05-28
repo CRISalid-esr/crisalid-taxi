@@ -120,14 +120,6 @@ app/
 - **python-dotenv** : Configuration environnement
 - **httpx** : Client HTTP
 
-## 🔄 Prochaines étapes
-
-- [ ] Intégrer une base de données (PostgreSQL/MongoDB/etc.)
-- [ ] Implémenter les modèles de données (Domain, Field, Subfield, Topic, Keyword)
-- [ ] Créer les endpoints API pour la taxonomie CRUD
-- [ ] Ajouter les migrations de BD (Alembic)
-- [ ] Écrire les tests (pytest)
-- [ ] Ajouter l'authentification/autorisation
 
 ## � Sécurité
 
