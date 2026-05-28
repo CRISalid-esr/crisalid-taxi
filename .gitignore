@@ -132,3 +132,11 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment and secrets (local development)
+.env.local
+.env.*.local
+.env.production
+secrets/
+*.pem
+*.key
