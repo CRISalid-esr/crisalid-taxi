@@ -31,7 +31,12 @@ def get_settings() -> AppSettings:
     """
     # Get base settings to determine environment
     base_settings = AppSettings()
-    app_env = AppEnvTypes(base_settings.app_env.lower())
+
+    # Convert string to AppEnvTypes if necessary
+    if isinstance(base_settings.app_env, str):
+        app_env = AppEnvTypes(base_settings.app_env.lower())
+    else:
+        app_env = base_settings.app_env
 
     # Get the settings class path for this environment
     settings_path = ENVIRONMENTS[app_env]

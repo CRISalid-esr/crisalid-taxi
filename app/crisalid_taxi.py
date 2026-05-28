@@ -22,11 +22,11 @@ class CrisalidTaxi(FastAPI):
         settings_instance = settings
 
         # Configure logging avec loguru
-        if settings_instance.app_env != AppEnvTypes.TEST.value:
+        if settings_instance.app_env != AppEnvTypes.TEST:
             logger.remove()
             logger.add(
                 sys.stderr,
-                level=settings_instance.log_level,
+                level=settings_instance.loguru_level,
                 format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
             )
 
