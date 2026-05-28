@@ -92,34 +92,13 @@ cp .env.sample .env
 uv run uvicorn app.crisalid_taxi:CrisalidTaxi --reload
 ```
 
-## 🏗️ Architecture du projet
-
-```
-app/
-├── main.py                 # Point d'entrée minimaliste
-├── crisalid_taxi.py        # Classe principale FastAPI
-├── config.py               # Configuration centralisée
-├── routes/
-│   ├── api.py              # Routeur maître
-│   └── health.py           # Endpoint santé
-├── settings/
-│   └── app_env_types.py    # Types d'environnement
-├── db/                     # (À venir) Couche BD
-├── models/                 # (À venir) Modèles ORM
-├── services/               # (À venir) Logique métier
-└── utils/
-    └── helpers.py          # Utilitaires
-```
-
 ## 📦 Dépendances
 
 - **fastapi** : Framework web API
 - **uvicorn** : Serveur ASGI
 - **pydantic** : Validation des données
 - **loguru** : Logging structuré
-- **python-dotenv** : Configuration environnement
 - **httpx** : Client HTTP
-
 
 ## � Sécurité
 
@@ -127,12 +106,6 @@ app/
 - **Fichiers d'environnement** : `.env.local` et `.env` sont ignorés dans git
 - **Configuration** : Utilisez `.env.sample` comme template, jamais commit de vrais secrets
 
-## 📝 License
-
-MIT
-- **Pydantic** - Validation de données
-- **Docker** - Conteneurisation
-
 ## 📝 Licence
 
-À définir
+MIT
