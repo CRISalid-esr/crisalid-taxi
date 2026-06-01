@@ -3,50 +3,32 @@ import sys
 
 from fastapi import FastAPI
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import ValidationError
 
-from app.config import settings
+from app.config import get_app_settings
+from app.errors.exceptions import NotFoundError, invalid_entity_error_handler
 from app.routes.api import router as api_router
 from app.settings.app_env_types import AppEnvTypes
-
-
-class RootResponse(BaseModel):
-    """Response model for root endpoint."""
-
-    version: str
-    title: str
 
 
 class CrisalidTaxi(FastAPI):
     """Main application, routing logic, middlewares and startup/shutdown events"""
 
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("title", "CRISalid Taxi API")
-        kwargs.setdefault("description", "API pour la gestion de la taxonomie OpenAlex")
-        kwargs.setdefault("version", "1.0.0")
-        super().__init__(*args, **kwargs)
-        settings_instance = settings
+    def __init__(self):
+        super().__init__()
+        settings = get_app_settings()
 
-        # Configure logging avec loguru
-        if settings_instance.app_env != AppEnvTypes.TEST:
+        self.include_router(
+            api_router, prefix=f"{settings.api_prefix}/{settings.api_version}"
+        )
+
+        if settings.app_env != AppEnvTypes.TEST:
             logger.remove()
             logger.add(
-                sys.stderr,
-                level=settings_instance.loguru_level,
-                format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+                settings.logger_sink,
+                level=settings.loguru_level,
+                **({"rotation": "100 MB"} if settings.logger_sink != sys.stderr else {}),
             )
 
-        # Include routers
-        self.include_router(api_router, prefix="/api/v1")
-
-        # Root endpoint
-        @self.get("/", response_model=RootResponse)
-        async def root() -> RootResponse:
-            """Root endpoint returning API information."""
-            logger.info("Root endpoint called")
-            return RootResponse(
-                version=self.version,
-                title=self.title,
-            )
-
-        logger.info("Application CRISalid Taxi initialized")
+        self.add_exception_handler(NotFoundError, invalid_entity_error_handler)
+        self.add_exception_handler(ValidationError, invalid_entity_error_handler)

@@ -13,10 +13,9 @@ def client():
 
 
 def test_root(client: TestClient):
-    """Test root endpoint."""
-    response = client.get("/")
+    """Test API is accessible via /api/v1/health endpoint."""
+    response = client.get("/api/v1/health")
     assert response.status_code == 200
-    assert "version" in response.json()
 
 
 def test_health_check(client: TestClient):

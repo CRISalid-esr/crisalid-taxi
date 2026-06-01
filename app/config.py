@@ -19,7 +19,7 @@ ENVIRONMENTS: Dict[AppEnvTypes, str] = {
 
 
 @lru_cache()
-def get_settings() -> AppSettings:
+def get_app_settings() -> AppSettings:
     """
     Load and return application settings based on APP_ENV environment variable.
 
@@ -50,5 +50,8 @@ def get_settings() -> AppSettings:
     return settings_class()
 
 
+# Backward compatibility alias
+get_settings = get_app_settings
+
 # Global settings instance
-settings = get_settings()
+settings = get_app_settings()
