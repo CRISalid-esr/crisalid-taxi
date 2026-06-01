@@ -13,6 +13,9 @@ services:
       - API_HOST=${API_HOST}
       - API_PORT=${API_PORT}
       - LOG_LEVEL=${LOG_LEVEL}
+      - OPENSEARCH_HOST=${OPENSEARCH_HOST}
+      - OPENSEARCH_PORT=${OPENSEARCH_PORT}
+      - OPENSEARCH_SCHEME=${OPENSEARCH_SCHEME}
     volumes:
       - ./app:/code/app
     networks:

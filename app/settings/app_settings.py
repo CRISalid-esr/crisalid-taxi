@@ -61,6 +61,11 @@ class AppSettings(BaseSettings):
     api_prefix: str = "/api"
     api_version: str = "v1"
 
+    # OpenSearch Configuration
+    opensearch_host: str = "localhost"
+    opensearch_port: int = 9200
+    opensearch_scheme: str = "http"
+
     # Application metadata
     git_commit: str = "-"
     git_branch: str = "-"

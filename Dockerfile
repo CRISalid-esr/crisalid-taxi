@@ -11,9 +11,11 @@ ENV PYTHONUNBUFFERED=1
 
 COPY ./requirements.txt /code/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt && \
+    pip install --no-cache-dir pytest==7.4.3 pytest-asyncio==0.21.1 pytest-cov==4.1.0
 
 COPY ./app /code/app
+COPY ./tests /code/tests
 
 EXPOSE 8000
 
