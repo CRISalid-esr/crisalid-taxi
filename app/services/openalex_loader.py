@@ -8,13 +8,22 @@ import os
 from functools import lru_cache
 from loguru import logger
 
-from app.utils.helpers import (
-    build_embedding_text,
+from app.utils.helpers import resolve_env_path
+from app.utils.openalex.loading import (
     build_id_lookup,
     build_name_lookup,
     build_parent_lookup,
     read_ndjson_entity_dir,
-    resolve_env_path,
+)
+from app.utils.openalex.payloads import (
+    build_domain_embedding,
+    build_domain_payload,
+    build_field_embedding,
+    build_field_payload,
+    build_subfield_embedding,
+    build_subfield_payload,
+    build_topic_embedding,
+    build_topic_payload,
 )
 
 
@@ -54,19 +63,6 @@ class OpenAlexLoader:
 
         self._loaded = False
 
-    @staticmethod
-    def _build_named_entity(entity_id: str, entity_name: str) -> dict[str, str]:
-        """Build a standard id/name payload for a hierarchy node."""
-        return {
-            "id": entity_id,
-            "name": entity_name,
-        }
-
-    @staticmethod
-    def _build_embedding_payload(values: list[str], keywords: list[str] | None = None) -> str:
-        """Build a flat text payload ready for embedding."""
-        return build_embedding_text(values, keywords=keywords)
-
     def _load_raw_records(self) -> None:
         """Load raw entity records from the OpenAlex snapshot."""
         self._domains_raw = read_ndjson_entity_dir(self.base_path, "domains")
@@ -88,14 +84,37 @@ class OpenAlexLoader:
         self.field_to_domain = build_parent_lookup(self.fields, "domain")
         self.subfield_to_field = build_parent_lookup(self.subfields, "field")
 
-    def load(self) -> bool:
-        """Load all OpenAlex data into memory and build lookups."""
-        if self._loaded:
-            logger.debug("OpenAlex data already loaded, skipping reload")
+    def _should_skip_load(self) -> bool:
+        """Return True when the loader is already hydrated in memory."""
+        if not self._loaded:
+            return False
+
+        logger.debug("OpenAlex data already loaded, skipping reload")
+        return True
+
+    def _has_valid_base_path(self) -> bool:
+        """Validate that the configured OpenAlex directory exists."""
+        if os.path.exists(self.base_path):
             return True
 
-        if not os.path.exists(self.base_path):
-            logger.error(f"OpenAlex path does not exist: {self.base_path}")
+        logger.error(f"OpenAlex path does not exist: {self.base_path}")
+        return False
+
+    def _get_total_records(self) -> int:
+        """Return the total number of loaded OpenAlex records."""
+        return sum(len(records) for records in (self.domains, self.fields, self.subfields, self.topics))
+
+    def _finalize_load(self) -> None:
+        """Mark the loader as ready and emit the final load summary."""
+        self._loaded = True
+        logger.info(f"OpenAlex hierarchy loaded: {self._get_total_records()} total records")
+
+    def load(self) -> bool:
+        """Load all OpenAlex data into memory and build lookups."""
+        if self._should_skip_load():
+            return True
+
+        if not self._has_valid_base_path():
             return False
 
         try:
@@ -104,9 +123,7 @@ class OpenAlexLoader:
             self._load_raw_records()
             self._build_lookups()
 
-            self._loaded = True
-            total = sum(len(x) for x in [self.domains, self.fields, self.subfields, self.topics])
-            logger.info(f"OpenAlex hierarchy loaded: {total} total records")
+            self._finalize_load()
             return True
         except Exception as e:
             logger.error(f"Failed to load OpenAlex hierarchy: {e}")
@@ -214,48 +231,25 @@ class OpenAlexLoader:
 
     def get_domains_formatted(self) -> list[dict]:
         """Get domains formatted as dict payloads."""
-        return [
-            {
-                "domain": self._build_named_entity(
-                    domain.get("id", ""),
-                    domain.get("display_name", "?"),
-                ),
-                "description": domain.get("description", ""),
-            }
-            for domain in self.domains
-        ]
+        return [build_domain_payload(domain) for domain in self.domains]
 
     def get_fields_formatted(self) -> list[dict]:
         """Get fields formatted as dict payloads."""
-        result = []
-        for field in self.fields:
-            domain_uri = (field.get("domain") or {}).get("id", "")
-            domain_name = self.domain_names.get(domain_uri, "?")
-            result.append({
-                "domain": self._build_named_entity(domain_uri, domain_name),
-                "field": self._build_named_entity(
-                    field.get("id", ""),
-                    field.get("display_name", "?"),
-                ),
-                "description": field.get("description", ""),
-            })
-        return result
+        return [
+            build_field_payload(
+                field,
+                (field.get("domain") or {}).get("id", ""),
+                self.domain_names.get((field.get("domain") or {}).get("id", ""), "?"),
+            )
+            for field in self.fields
+        ]
 
     def get_subfields_formatted(self) -> list[dict]:
         """Get subfields formatted as dict payloads."""
-        result = []
-        for subfield in self.subfields:
-            hierarchy = self._resolve_subfield_hierarchy(subfield)
-            result.append({
-                "domain": self._build_named_entity(hierarchy["domain_id"], hierarchy["domain_name"]),
-                "field": self._build_named_entity(hierarchy["field_id"], hierarchy["field_name"]),
-                "subfield": self._build_named_entity(
-                    subfield.get("id", ""),
-                    subfield.get("display_name", "?"),
-                ),
-                "description": subfield.get("description", ""),
-            })
-        return result
+        return [
+            build_subfield_payload(subfield, self._resolve_subfield_hierarchy(subfield))
+            for subfield in self.subfields
+        ]
 
     def get_topics_formatted(self) -> list[dict]:
         """Get topics formatted as dict payloads."""
@@ -265,17 +259,14 @@ class OpenAlexLoader:
             subfield_uri = (topic.get("subfield") or {}).get("id", "")
             field_uri = self.subfield_to_field.get(subfield_uri, "")
             domain_uri = self.field_to_domain.get(field_uri, "")
-            result.append({
-                "domain": self._build_named_entity(domain_uri, hierarchy["domain_name"]),
-                "field": self._build_named_entity(field_uri, hierarchy["field_name"]),
-                "subfield": self._build_named_entity(subfield_uri, hierarchy["subfield_name"]),
-                "topic": self._build_named_entity(
-                    topic.get("id", ""),
-                    topic.get("display_name", "?"),
-                ),
-                "description": topic.get("description", ""),
-                "keywords": self.get_keywords(topic),
-            })
+            result.append(build_topic_payload(
+                topic,
+                hierarchy,
+                subfield_uri,
+                field_uri,
+                domain_uri,
+                self.get_keywords(topic),
+            ))
         return result
 
     # ========================================================================
@@ -284,55 +275,31 @@ class OpenAlexLoader:
 
     def get_domains_embedding(self) -> list[str]:
         """Get domains as concatenated text payloads for embedding."""
-        return [
-            self._build_embedding_payload([
-                domain.get("display_name", "?"),
-                domain.get("description", ""),
-            ])
-            for domain in self.domains
-        ]
+        return [build_domain_embedding(domain) for domain in self.domains]
 
     def get_fields_embedding(self) -> list[str]:
         """Get fields as concatenated text payloads for embedding."""
-        result = []
-        for field in self.fields:
-            domain_uri = (field.get("domain") or {}).get("id", "")
-            result.append(self._build_embedding_payload([
-                self.domain_names.get(domain_uri, "?"),
-                field.get("display_name", "?"),
-                field.get("description", ""),
-            ]))
-        return result
+        return [
+            build_field_embedding(
+                field,
+                self.domain_names.get((field.get("domain") or {}).get("id", ""), "?"),
+            )
+            for field in self.fields
+        ]
 
     def get_subfields_embedding(self) -> list[str]:
         """Get subfields as concatenated text payloads for embedding."""
-        result = []
-        for subfield in self.subfields:
-            hierarchy = self._resolve_subfield_hierarchy(subfield)
-            result.append(self._build_embedding_payload([
-                hierarchy["domain_name"],
-                hierarchy["field_name"],
-                subfield.get("display_name", "?"),
-                subfield.get("description", ""),
-            ]))
-        return result
+        return [
+            build_subfield_embedding(subfield, self._resolve_subfield_hierarchy(subfield))
+            for subfield in self.subfields
+        ]
 
     def get_topics_embedding(self) -> list[str]:
         """Get topics as concatenated text payloads for embedding."""
-        result = []
-        for topic in self.topics:
-            hierarchy = self._resolve_topic_hierarchy(topic)
-            result.append(self._build_embedding_payload(
-                [
-                    hierarchy["domain_name"],
-                    hierarchy["field_name"],
-                    hierarchy["subfield_name"],
-                    topic.get("display_name", "?"),
-                    topic.get("description", ""),
-                ],
-                keywords=self.get_keywords(topic),
-            ))
-        return result
+        return [
+            build_topic_embedding(topic, self._resolve_topic_hierarchy(topic), self.get_keywords(topic))
+            for topic in self.topics
+        ]
 
 
 @lru_cache(maxsize=1)
