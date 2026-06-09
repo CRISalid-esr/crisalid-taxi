@@ -1,5 +1,6 @@
 """OpenSearch client service."""
 from opensearchpy import OpenSearch
+from opensearchpy.helpers import bulk
 from loguru import logger
 
 from app.config import get_app_settings
@@ -39,6 +40,31 @@ class OpenSearchClient:
         except Exception as e:
             logger.error(f"Failed to get OpenSearch info: {e}")
             return {}
+    
+    def save_embeddings(self, index_name: str, docs: list[dict]) -> None:
+        actions = [
+            {
+                "_index": index_name,
+                "_id": doc["_id"],
+                "_source": {
+                    "embedding": doc["embedding"],
+                    "type": doc["type"],
+                    "display_name": doc["display_name"],
+                },
+            }
+            for doc in docs
+        ]
+
+        success, failed = bulk(
+            self.client,
+            actions,
+            raise_on_error=False,
+            stats_only=True,
+        )
+
+        logger.info(
+            f"OpenSearch bulk indexing completed: success={success}, failed={failed}"
+        )
 
 
 def get_opensearch_client() -> OpenSearchClient:

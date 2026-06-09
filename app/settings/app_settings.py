@@ -66,6 +66,14 @@ class AppSettings(BaseSettings):
     opensearch_port: int = 9200
     opensearch_scheme: str = "http"
 
+    # Embedding Configuration
+    embedding_provider: str = "openai_compatible"
+    embedding_api_url: str | None = None
+    embedding_api_key: str | None = None
+    embedding_api_model: str | None = None
+    embedding_timeout_seconds: int = 30
+    embedding_batch_size: int = 32
+
     # Application metadata
     git_commit: str = "-"
     git_branch: str = "-"
