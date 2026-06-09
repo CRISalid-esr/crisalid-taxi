@@ -1,6 +1,6 @@
 """Test OpenAlexLoader service - Display embedding texts."""
 
-from app.services.openalex_loader import get_openalex_loader
+from app.services.loading import get_openalex_loader
 import os
 
 
