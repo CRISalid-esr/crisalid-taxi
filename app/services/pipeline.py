@@ -56,7 +56,10 @@ class StartupPipeline:
         logger.info(f"Envoi de {len(items)} concepts au service d'Intelligence Artificielle...")
         try:
             # 3. Generate embeddings
-            records = await self._embedding.embed_openalex_items(items)
+            embedded = self._embedding.embed_openalex_items(items)
+            records = await embedded if hasattr(embedded, "__await__") else embedded
+
+
 
             # 3b. Ensure OpenSearch index mapping for vectors
             if records:
@@ -100,4 +103,6 @@ class StartupPipeline:
 
         except Exception as exc:
             logger.exception(f"❌ Échec de la génération ou indexation des embeddings: {exc}")
+
             return False
+
