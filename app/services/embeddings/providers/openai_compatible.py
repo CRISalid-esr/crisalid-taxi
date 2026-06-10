@@ -12,18 +12,14 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
     def __init__(self, settings):
         if not settings.embedding_api_url:
-            raise ValueError(
-                "EMBEDDING_API_URL is required for the openai_compatible provider"
-            )
+            raise ValueError("EMBEDDING_API_URL is required for the openai_compatible provider")
         if not settings.embedding_api_model:
-            raise ValueError(
-                "EMBEDDING_API_MODEL is required for the openai_compatible provider"
-            )
+            raise ValueError("EMBEDDING_API_MODEL is required for the openai_compatible provider")
         self._url = settings.embedding_api_url.rstrip("/") + "/embeddings"
         self._api_key = settings.embedding_api_key
         self._model = settings.embedding_api_model
         self._timeout = aiohttp.ClientTimeout(total=settings.embedding_timeout_seconds)
-        
+
         logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -46,5 +42,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
             )
 
         sorted_embeddings = sorted(embeddings, key=lambda e: e["index"])
-        logger.info(f"   > Réception réussie des {len(sorted_embeddings)} vecteurs depuis le serveur IA.")
+        logger.info(
+            f"   > Réception réussie des {len(sorted_embeddings)} vecteurs depuis le serveur IA."
+        )
         return [e["embedding"] for e in sorted_embeddings]

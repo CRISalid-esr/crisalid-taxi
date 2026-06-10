@@ -1,4 +1,4 @@
-"""Hierarchy resolution mixin for OpenAlexLoader."""
+"""Hierarchy resolution for OpenAlexLoader."""
 
 from loguru import logger
 from app.utils.openalex.loading import (
@@ -8,23 +8,42 @@ from app.utils.openalex.loading import (
 )
 
 
-class HierarchyResolverMixin:
+class HierarchyResolver:
     """Provides methods for resolving OpenAlex entity hierarchies and names."""
 
-    def _build_lookups(self) -> None:
+    def __init__(self):
+        self.domain_names: dict[str, str] = {}
+        self.field_names: dict[str, str] = {}
+        self.subfield_names: dict[str, str] = {}
+
+        self._domains_by_id: dict[str, dict] = {}
+        self._fields_by_id: dict[str, dict] = {}
+        self._subfields_by_id: dict[str, dict] = {}
+        self._topics_by_id: dict[str, dict] = {}
+
+        self.field_to_domain: dict[str, str] = {}
+        self.subfield_to_field: dict[str, str] = {}
+
+    def build_lookups(
+        self,
+        domains: list[dict],
+        fields: list[dict],
+        subfields: list[dict],
+        topics: list[dict],
+    ) -> None:
         """Build entity lookup tables after raw records are loaded."""
         logger.info("Étape 2/4 : Construction des relations entre les concepts (hiérarchies)...")
-        self.domain_names = build_name_lookup(self.domains)
-        self.field_names = build_name_lookup(self.fields)
-        self.subfield_names = build_name_lookup(self.subfields)
+        self.domain_names = build_name_lookup(domains)
+        self.field_names = build_name_lookup(fields)
+        self.subfield_names = build_name_lookup(subfields)
 
-        self._domains_by_id = build_id_lookup(self.domains)
-        self._fields_by_id = build_id_lookup(self.fields)
-        self._subfields_by_id = build_id_lookup(self.subfields)
-        self._topics_by_id = build_id_lookup(self.topics)
+        self._domains_by_id = build_id_lookup(domains)
+        self._fields_by_id = build_id_lookup(fields)
+        self._subfields_by_id = build_id_lookup(subfields)
+        self._topics_by_id = build_id_lookup(topics)
 
-        self.field_to_domain = build_parent_lookup(self.fields, "domain")
-        self.subfield_to_field = build_parent_lookup(self.subfields, "field")
+        self.field_to_domain = build_parent_lookup(fields, "domain")
+        self.subfield_to_field = build_parent_lookup(subfields, "field")
         logger.info("Étape 2/4 : Construction terminée avec succès.")
 
     def get_domain_by_uri(self, uri: str) -> dict | None:
@@ -58,7 +77,7 @@ class HierarchyResolverMixin:
         field_uri = self.subfield_to_field.get(subfield_uri, "")
         return self.get_domain_of_field(field_uri)
 
-    def _resolve_topic_hierarchy(self, topic: dict) -> dict:
+    def resolve_topic_hierarchy(self, topic: dict) -> dict:
         """Extract and resolve hierarchy for a topic."""
         sf_uri = (topic.get("subfield") or {}).get("id", "")
         field_uri = self.subfield_to_field.get(sf_uri, "")
@@ -71,7 +90,7 @@ class HierarchyResolverMixin:
             "subfield_name": subfield_name,
         }
 
-    def _resolve_subfield_hierarchy(self, subfield: dict) -> dict:
+    def resolve_subfield_hierarchy(self, subfield: dict) -> dict:
         """Extract and resolve hierarchy for a subfield."""
         field_uri = (subfield.get("field") or {}).get("id", "")
         return {
@@ -81,7 +100,8 @@ class HierarchyResolverMixin:
             "field_name": self.field_names.get(field_uri, "?"),
         }
 
-    def get_keywords(self, record: dict) -> list[str]:
+    @staticmethod
+    def get_keywords(record: dict) -> list[str]:
         """Extract keywords from record."""
         kws = record.get("keywords", [])
         if not kws:

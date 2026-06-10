@@ -1,4 +1,5 @@
 """Health Check Route."""
+
 from fastapi import status, APIRouter
 from loguru import logger
 from pydantic import BaseModel
@@ -33,9 +34,9 @@ async def get_health() -> HealthCheck:
         HealthCheck: Returns a JSON response with the health status
     """
     logger.info("Health check performed")
-    
+
     # Check OpenSearch connection
     os_client = get_opensearch_client()
     opensearch_status = "connected" if os_client.ping() else "disconnected"
-    
+
     return HealthCheck(status="healthy", opensearch=opensearch_status)

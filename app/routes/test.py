@@ -1,4 +1,5 @@
 """Test routes for development purposes."""
+
 from fastapi import APIRouter, status
 from loguru import logger
 from pydantic import BaseModel

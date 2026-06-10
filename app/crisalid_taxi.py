@@ -1,4 +1,5 @@
 """Main application module, defining the FastAPI app and its configuration."""
+
 import sys
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -17,29 +18,22 @@ from app.settings.app_env_types import AppEnvTypes
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
-    """Application lifespan: load OpenAlex data then compute embeddings at startup."""
+    """Application lifespan: run the OpenAlex startup pipeline."""
     settings = get_app_settings()
 
     if settings.app_env != AppEnvTypes.TEST:
-        loader = get_openalex_loader()
+        from app.services.pipeline import StartupPipeline
+        from app.services.opensearch_client import get_opensearch_client
 
-        if loader._loaded:
-            # Data already in memory (e.g. hot reload) – jump straight to embeddings
-            embedding_service = EmbeddingService()
-            await loader.load_embeddings(embedding_service)
-        else:
-            ok = loader.load()
-            if ok:
-                embedding_service = EmbeddingService()
-                await loader.load_embeddings(embedding_service)
-            else:
-                logger.warning(
-                    "OpenAlex data could not be loaded – embeddings skipped at startup"
-                )
+        pipeline = StartupPipeline(
+            loader=get_openalex_loader(),
+            embedding_service=EmbeddingService(),
+            opensearch_client=get_opensearch_client(),
+        )
+        await pipeline.run()
 
     yield  # ← application runs here
 
-    # Shutdown: loader is cached, provider is stateless – nothing to clean up
     logger.info("CrisalidTaxi shutdown complete")
 
 
@@ -50,18 +44,14 @@ class CrisalidTaxi(FastAPI):
         super().__init__(lifespan=_lifespan)
         settings = get_app_settings()
 
-        self.include_router(
-            api_router, prefix=f"{settings.api_prefix}/{settings.api_version}"
-        )
+        self.include_router(api_router, prefix=f"{settings.api_prefix}/{settings.api_version}")
 
         if settings.app_env != AppEnvTypes.TEST:
             logger.remove()
             logger.add(
                 settings.logger_sink,
                 level=settings.loguru_level,
-                **({
-                    "rotation": "100 MB"
-                } if settings.logger_sink != sys.stderr else {}),
+                **({"rotation": "100 MB"} if settings.logger_sink != sys.stderr else {}),
             )
 
         self.add_exception_handler(NotFoundError, invalid_entity_error_handler)

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class TestResponse(BaseModel):
     """Test response model.
-    
+
     Modèle de réponse pour les endpoints de test.
     """
 
@@ -35,4 +35,3 @@ class TestResponse(BaseModel):
                 "data": {"test_value": "example"},
             }
         }
-

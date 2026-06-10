@@ -32,9 +32,7 @@ def read_ndjson_entity_dir(base_path: str, dir_name: str) -> list[dict[str, Any]
                             try:
                                 records.append(json.loads(line))
                             except json.JSONDecodeError as exc:
-                                logger.warning(
-                                    f"JSON parse error in {file_path}:{line_num}: {exc}"
-                                )
+                                logger.warning(f"JSON parse error in {file_path}:{line_num}: {exc}")
                 except IOError as exc:
                     logger.error(f"Failed to read file {file_path}: {exc}")
         logger.info(f"Loaded {len(records)} records from {dir_name}")
@@ -46,18 +44,12 @@ def read_ndjson_entity_dir(base_path: str, dir_name: str) -> list[dict[str, Any]
 
 def build_name_lookup(records: list[dict[str, Any]]) -> dict[str, str]:
     """Build a display name lookup keyed by record id."""
-    return {
-        record["id"]: record.get("display_name", "?")
-        for record in records
-    }
+    return {record["id"]: record.get("display_name", "?") for record in records}
 
 
 def build_id_lookup(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Build a record lookup keyed by record id."""
-    return {
-        record["id"]: record
-        for record in records
-    }
+    return {record["id"]: record for record in records}
 
 
 def build_parent_lookup(
@@ -65,10 +57,7 @@ def build_parent_lookup(
     parent_key: str,
 ) -> dict[str, str]:
     """Build a parent id lookup keyed by record id."""
-    return {
-        record["id"]: (record.get(parent_key) or {}).get("id", "")
-        for record in records
-    }
+    return {record["id"]: (record.get(parent_key) or {}).get("id", "") for record in records}
 
 
 def build_embedding_text(
@@ -83,9 +72,7 @@ def build_embedding_text(
     ]
 
     parts.extend(
-        keyword.strip().rstrip(",. ")
-        for keyword in keywords or []
-        if keyword and keyword.strip()
+        keyword.strip().rstrip(",. ") for keyword in keywords or [] if keyword and keyword.strip()
     )
 
     return ", ".join(parts)

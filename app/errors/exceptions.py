@@ -1,4 +1,5 @@
 """Custom exceptions for the application."""
+
 import json
 
 from pydantic import ValidationError as PydanticValidationError
@@ -30,9 +31,7 @@ class NotFoundError(ApplicationError):
         super().__init__(message, 404)
 
 
-async def invalid_entity_error_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def invalid_entity_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for invalid entity errors (validation errors)."""
     if isinstance(exc, PydanticValidationError):
         return JSONResponse(
@@ -50,9 +49,7 @@ async def invalid_entity_error_handler(
     )
 
 
-async def not_found_entity_error_handler(
-    request: Request, exc: NotFoundError
-) -> JSONResponse:
+async def not_found_entity_error_handler(request: Request, exc: NotFoundError) -> JSONResponse:
     """Handler for not found errors."""
     return JSONResponse(
         status_code=HTTP_404_NOT_FOUND,

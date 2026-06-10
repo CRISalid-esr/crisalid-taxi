@@ -71,29 +71,35 @@ def build_topic_payload(
 
 def build_domain_embedding(domain: dict) -> str:
     """Build the domain embedding payload."""
-    return build_embedding_text([
-        domain.get("display_name", "?"),
-        domain.get("description", ""),
-    ])
+    return build_embedding_text(
+        [
+            domain.get("display_name", "?"),
+            domain.get("description", ""),
+        ]
+    )
 
 
 def build_field_embedding(field: dict, domain_name: str) -> str:
     """Build the field embedding payload."""
-    return build_embedding_text([
-        domain_name,
-        field.get("display_name", "?"),
-        field.get("description", ""),
-    ])
+    return build_embedding_text(
+        [
+            domain_name,
+            field.get("display_name", "?"),
+            field.get("description", ""),
+        ]
+    )
 
 
 def build_subfield_embedding(subfield: dict, hierarchy: dict[str, str]) -> str:
     """Build the subfield embedding payload."""
-    return build_embedding_text([
-        hierarchy["domain_name"],
-        hierarchy["field_name"],
-        subfield.get("display_name", "?"),
-        subfield.get("description", ""),
-    ])
+    return build_embedding_text(
+        [
+            hierarchy["domain_name"],
+            hierarchy["field_name"],
+            subfield.get("display_name", "?"),
+            subfield.get("description", ""),
+        ]
+    )
 
 
 def build_topic_embedding(topic: dict, hierarchy: dict[str, str], keywords: list[str]) -> str:

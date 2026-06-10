@@ -3,6 +3,7 @@
 Application settings main class with parameters definition.
 Supports loading configuration from environment variables and YAML files.
 """
+
 import logging
 import os
 from typing import ClassVar, TextIO
@@ -16,7 +17,7 @@ from app.settings.app_env_types import AppEnvTypes
 
 class AppSettings(BaseSettings):
     """App settings main class with parameters definition."""
-    
+
     model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     @staticmethod
@@ -27,9 +28,7 @@ class AppSettings(BaseSettings):
         :param filename: The name of the settings file
         :return: The path of the settings file
         """
-        return os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "..", "..", filename
-        )
+        return os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "..", filename)
 
     @staticmethod
     def dct_from_yml(yml_file: str) -> dict:

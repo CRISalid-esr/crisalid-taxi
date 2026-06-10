@@ -1,4 +1,5 @@
 """Main API router for /api/v1 endpoints."""
+
 from fastapi import APIRouter
 
 from app.routes.health import router as health_router

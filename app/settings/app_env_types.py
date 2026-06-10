@@ -1,4 +1,5 @@
 """Application settings and environment types."""
+
 from enum import Enum
 
 
