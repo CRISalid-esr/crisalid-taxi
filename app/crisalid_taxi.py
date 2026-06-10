@@ -11,10 +11,9 @@ from pydantic import ValidationError
 from app.config import get_app_settings
 from app.errors.exceptions import NotFoundError, invalid_entity_error_handler
 from app.routes.api import router as api_router
+from app.services.embeddings.embedding_service import EmbeddingService
 from app.services.loading import get_openalex_loader
 from app.settings.app_env_types import AppEnvTypes
-from app.services.embeddings.embedding_service import EmbeddingService
-from app.services.embeddings.providers.sentence_transformer import SentenceTransformerProvider
 
 
 @asynccontextmanager
@@ -22,21 +21,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     """Application lifespan: run the OpenAlex startup pipeline."""
     settings = get_app_settings()
 
-    if settings.app_env == AppEnvTypes.TEST:
-        dummy_provider = SentenceTransformerProvider(settings)
-        embedding_service = EmbeddingService.__new__(EmbeddingService)
-        embedding_service.settings = settings
-        embedding_service.provider = dummy_provider
-    else:
-        embedding_service = EmbeddingService()
-
     if settings.app_env != AppEnvTypes.TEST:
         from app.services.pipeline import StartupPipeline
         from app.services.opensearch_client import get_opensearch_client
 
         pipeline = StartupPipeline(
             loader=get_openalex_loader(),
-            embedding_service=embedding_service,
+            embedding_service=EmbeddingService(),
             opensearch_client=get_opensearch_client(),
         )
         await pipeline.run()

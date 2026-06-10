@@ -12,7 +12,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11"]
-
+    env:
+      EMBEDDING_PROVIDER: sentence_transformer
     steps:
       - uses: actions/checkout@v3
 

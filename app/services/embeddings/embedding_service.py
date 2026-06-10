@@ -7,8 +7,6 @@ from loguru import logger
 from app.config import get_app_settings
 from app.models.embedding import EmbeddingRecord
 from app.services.embeddings.providers.factory import get_embedding_provider
-from app.settings.app_env_types import AppEnvTypes
-from app.services.embeddings.providers.sentence_transformer import SentenceTransformerProvider
 
 # Type alias for the hierarchy level
 OpenAlexType = Literal["domain", "field", "subfield", "topic"]
@@ -27,11 +25,7 @@ class EmbeddingService:
 
     def __init__(self):
         self.settings = get_app_settings()
-
-        if self.settings.app_env == AppEnvTypes.TEST:
-            self.provider = SentenceTransformerProvider(self.settings)
-        else:
-            self.provider = get_embedding_provider(self.settings)
+        self.provider = get_embedding_provider(self.settings)
 
     # ------------------------------------------------------------------
     # Low-level helpers
