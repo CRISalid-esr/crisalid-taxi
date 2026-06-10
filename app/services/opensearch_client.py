@@ -1,7 +1,8 @@
 from functools import lru_cache
+
+from loguru import logger
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
-from loguru import logger
 
 from app.config import get_app_settings
 
@@ -12,6 +13,7 @@ class OpenSearchClient:
     def __init__(self):
         """Initialize OpenSearch client."""
         settings = get_app_settings()
+
         logger.debug(
             f"Connecting to OpenSearch at {settings.opensearch_scheme}://{settings.opensearch_host}:{settings.opensearch_port}"
         )
@@ -46,8 +48,35 @@ class OpenSearchClient:
             logger.error(f"Failed to get OpenSearch info: {e}")
             return {}
 
+    def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
+        """Ensure the OpenSearch index exists with a vector-compatible mapping."""
+        if self.client.indices.exists(index=index_name):
+            return
+
+        mapping = {
+            "mappings": {
+                "properties": {
+                    "embedding": {
+                        "type": "knn_vector",
+                        "dimension": dims,
+                        "method": {
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                            "engine": "nmslib",
+                            "parameters": {},
+                        },
+                    },
+                    "type": {"type": "keyword"},
+                    "display_name": {"type": "text"},
+                }
+            }
+        }
+
+        self.client.indices.create(index=index_name, body=mapping)
+
     def save_embeddings(self, index_name: str, docs: list[dict]) -> None:
         actions = [
+
             {
                 "_index": index_name,
                 "_id": doc["_id"],

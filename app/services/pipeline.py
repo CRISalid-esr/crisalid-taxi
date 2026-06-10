@@ -58,6 +58,11 @@ class StartupPipeline:
             # 3. Generate embeddings
             records = await self._embedding.embed_openalex_items(items)
 
+            # 3b. Ensure OpenSearch index mapping for vectors
+            if records:
+                dims = len(records[0].embedding)
+                self._opensearch.ensure_embeddings_index("openalex_embeddings", dims)
+
             # 4. Save to OpenSearch
             docs = [
                 {
@@ -73,6 +78,7 @@ class StartupPipeline:
                 index_name="openalex_embeddings",
                 docs=docs,
             )
+
 
             # Log a preview of the generated embeddings in JSON format
             logger.info(f"── Résultats OpenAlex au format JSON ({len(records)} générés) ──")
