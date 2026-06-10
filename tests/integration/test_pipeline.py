@@ -34,10 +34,23 @@ async def test_startup_pipeline_full_flow(temp_openalex_dir, mock_embedding_serv
     assert mock_embedding_service.embed_openalex_items.called
     assert mock_opensearch_client.save_embeddings.called
 
+    # Ensure index mapping for vectors was created based on embedding dims
+    assert mock_opensearch_client.ensure_embeddings_index.called
+    # ensure_embeddings_index is called with keyword args in StartupPipeline
+    ensure_args = mock_opensearch_client.ensure_embeddings_index.call_args
+    # call_args = (args, kwargs)
+    ensure_kwargs = ensure_args.kwargs
+
+    assert ensure_kwargs["index_name"] == "openalex_embeddings"
+    assert isinstance(ensure_kwargs["dims"], int)
+    assert ensure_kwargs["dims"] > 0
+
+
     # Get arguments sent to save_embeddings
     call_args = mock_opensearch_client.save_embeddings.call_args[1]
     assert call_args["index_name"] == "openalex_embeddings"
     assert len(call_args["docs"]) == 4  # 1 domain, 1 field, 1 subfield, 1 topic
+
 
     # Check state file got created
     assert os.path.exists(test_state_file)

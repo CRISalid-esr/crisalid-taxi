@@ -61,7 +61,10 @@ class StartupPipeline:
             # 3b. Ensure OpenSearch index mapping for vectors
             if records:
                 dims = len(records[0].embedding)
-                self._opensearch.ensure_embeddings_index("openalex_embeddings", dims)
+                self._opensearch.ensure_embeddings_index(
+                    index_name="openalex_embeddings",
+                    dims=dims,
+                )
 
             # 4. Save to OpenSearch
             docs = [
