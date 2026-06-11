@@ -11,7 +11,7 @@ services:
       - ./.env
     volumes:
       - ./app:/code/app
-      - /home/samy/Musique/ikg/data/openalex:/data/openalex
+      - ${OPENALEX_DATA_HOST_PATH}:${OPENALEX_DATA_PATH}
     networks:
       - crisalid-taxi-net
     depends_on:
