@@ -10,6 +10,56 @@ from app.config import get_app_settings
 class OpenSearchClient:
     """OpenSearch client wrapper."""
 
+    async def get_all_embeddings(
+        self, index_name: str
+    ) -> tuple[list[str], "np.ndarray", list[str]]:
+        """Load all embeddings from an OpenSearch index.
+
+        Returns
+        -------
+        (ids, embeddings, levels)
+            - ids: concept_uid per record
+            - embeddings: float32 numpy matrix (n, dims)
+            - levels: hierarchy level per record
+        """
+        # Local import to avoid hard dependency at import time.
+        import numpy as np
+
+        # Query all docs (use scroll). This implementation favors correctness.
+        query = {"query": {"match_all": {}}}
+        response = self.client.search(
+            index=index_name, body=query, scroll="1m", size=1000
+        )
+
+        ids: list[str] = []
+        embeddings: list[list[float]] = []
+        levels: list[str] = []
+
+        while True:
+            hits = response.get("hits", {}).get("hits", [])
+            for hit in hits:
+                src = hit.get("_source", {})
+                ids.append(str(hit.get("_id", src.get("_id", ""))))
+                emb = src.get("embedding", [])
+                embeddings.append(list(emb))
+                levels.append(str(src.get("type", "domain")))
+
+            scroll_id = response.get("_scroll_id")
+            if not scroll_id:
+                break
+
+            response = self.client.scroll(scroll_id=scroll_id, scroll="1m")
+            if not response.get("hits", {}).get("hits"):
+                break
+
+        if not embeddings:
+            return [], np.zeros((0, 0), dtype=np.float32), []
+
+        emb_matrix = np.asarray(embeddings, dtype=np.float32)
+        # Some stored data might already be L2-normalised, which is fine.
+        return ids, emb_matrix, levels
+
+
     def __init__(self):
         """Initialize OpenSearch client."""
         settings = get_app_settings()

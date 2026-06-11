@@ -73,6 +73,16 @@ class AppSettings(BaseSettings):
     embedding_timeout_seconds: int = 30
     embedding_batch_size: int = 32
 
+    # Matching Configuration
+    # Cosine similarity threshold used by the matcher.
+    similarity_threshold: float = 0.52
+    # Optional cap on number of matches per (query, taxonomy node) row.
+    # If None, returns all concepts above threshold.
+    top_k: int | None = None
+    # Chunk size used to split the taxonomy embeddings for similarity computation.
+    chunk_size: int = 5000
+
+
     # Application metadata
     git_commit: str = "-"
     git_branch: str = "-"
