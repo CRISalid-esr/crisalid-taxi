@@ -1,237 +1,223 @@
 # crisalid-taxi
 
-Microservice FastAPI pour la gestion de la taxonomie OpenAlex. API minimale et extensible.
+FastAPI microservice for managing the OpenAlex taxonomy. A minimal and extensible API.
 
-## 📋 Prérequis
+## 📋 Prerequisites
 
-- Docker et Docker Compose installés
-- Python 3.11+ (pour le développement local)
-- [uv](https://docs.astral.sh/uv/) (gestionnaire de packages Python moderne)
+- Docker and Docker Compose installed
+- Python 3.11+ (for local development)
+- uv (modern Python package manager)
 
-### Installation de uv
+### Installing uv
 
 ```bash
-# Linux / macOS
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Ou via pip
 pip install uv
 ```
 
-## 🚀 Démarrage rapide avec Docker
+## 🚀 Quick Start with Docker
 
-### 1. Configuration de l'environnement
+### 1. Environment Configuration
 
-Copier le fichier template `.env.sample` en `.env.local` :
+The project relies on a `.env` file loaded by Docker Compose.
 
-```bash
-cp .env.sample .env.local
-```
+> ⚠️ The `docker-compose.yaml` file loads `./.env` through `env_file`.
 
-Le fichier `.env.local` contient :
-
-```env
-APP_ENV=DEV
-API_HOST=0.0.0.0
-API_PORT=8000
-API_TITLE=CRISalid Taxi API
-API_VERSION=0.1.0
-LOG_LEVEL=DEBUG
-```
-
-### 2. Démarrer l'API avec Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-Cela va :
-- Construire l'image Docker de l'API FastAPI
-- Démarrer l'API sur le port 8000
-- Démarrer OpenSearch 2.11.0 sur le port 9200
-
-### 3. Vérifier que tout fonctionne
-
-**Vérifier la santé de l'API** :
-```bash
-curl http://localhost:8000/
-```
-
-Réponse attendue :
-```json
-{
-  "version": "1.0.0",
-  "title": "CRISalid Taxi API"
-}
-```
-
-**Vérifier la santé d'OpenSearch** :
-```bash
-curl http://localhost:9200/
-```
-
-Réponse attendue :
-```json
-{
-  "name": "opensearch-node",
-  "cluster_name": "opensearch-cluster",
-  "version": {
-    "number": "2.11.0",
-    ...
-  }
-}
-```
-
-**Accéder à la documentation Swagger** :
-- Ouvrir http://localhost:8000/docs dans le navigateur
-- Voir aussi ReDoc à http://localhost:8000/redoc
-
-### 4. Arrêter les services
-
-```bash
-docker-compose down
-```
-
-## 📚 Documentation API
-
-La documentation Swagger interactive est disponible à :
-- **Swagger UI** : http://localhost:8000/docs
-- **ReDoc** : http://localhost:8000/redoc
-- **OpenAPI JSON** : http://localhost:8000/openapi.json
-
-## 🛠️ Développement local (sans Docker)
-
-### Installation des dépendances
-
-```bash
-# Installer les dépendances de production
-uv sync
-
-# Installer toutes les dépendances (prod + dev : pytest, black, pylint, etc.)
-uv sync --all-extras
-```
-
-### Gestion des dépendances
-
-Les dépendances sont déclarées dans `pyproject.toml` et verrouillées dans `uv.lock`.
-
-```bash
-# Ajouter une dépendance de production
-uv add <package>
-
-# Ajouter une dépendance de développement
-uv add --optional dev <package>
-
-# Supprimer une dépendance
-uv remove <package>
-```
-
-> ⚠️ **Ne pas modifier manuellement `uv.lock`** — ce fichier est généré automatiquement par `uv sync` / `uv add`.
-
-### Variables d'environnement
-
-Créer un fichier `.env` pour le développement local :
+Copy the `.env.sample` template to `.env`:
 
 ```bash
 cp .env.sample .env
 ```
 
-### Démarrer l'API
+### 2. Start the API with Docker Compose
 
 ```bash
-uv run uvicorn app.crisalid_taxi:CrisalidTaxi --reload
+docker-compose up -d
 ```
 
-### Tests et qualité de code
+This will:
+
+- Build the FastAPI Docker image
+- Start the API on port **8000**
+- Start OpenSearch 2.11.0 on port **9200** (with Dashboards available on **5601**)
+
+### 3. Verify Everything Is Running
+
+**Check API health:**
 
 ```bash
-# Lancer les tests
+curl http://localhost:8000/api/v1/health/
+```
+
+**Check OpenSearch health:**
+
+```bash
+curl http://localhost:9200/
+```
+
+Expected response (example):
+
+```json
+{
+  "name": "opensearch-node",
+  "cluster_name": "opensearch-cluster",
+  "version": {
+    "number": "2.11.0"
+  }
+}
+```
+
+**Access Swagger documentation:**
+
+- Open http://localhost:8000/docs in your browser
+- ReDoc is also available at http://localhost:8000/redoc
+
+### 4. Stop the Services
+
+```bash
+docker-compose down
+```
+
+## 📚 API Documentation
+
+Interactive API documentation is available at:
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
+
+## 🔌 API Endpoints
+
+The service exposes endpoints under the **`/api/v1`** prefix.
+
+### Health
+
+```bash
+curl http://localhost:8000/api/v1/health/
+```
+
+### Test
+
+```bash
+curl http://localhost:8000/api/v1/test/
+curl http://localhost:8000/api/v1/test/John
+```
+
+### Match (Semantic Classification)
+
+```bash
+curl -X POST http://localhost:8000/api/v1/match/ \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "texts": ["Text A", "Text B"],
+    "ids": ["id-a", "id-b"]
+  }'
+```
+
+> Note: `texts` and `ids` must have the same length.
+
+---
+
+## 🛠️ Local Development (Without Docker)
+
+### Installing Dependencies
+
+```bash
+# Install production dependencies
+uv sync
+
+# Install all dependencies (prod + dev: pytest, black, pylint, etc.)
+uv sync --all-extras
+```
+
+### Dependency Management
+
+Dependencies are declared in `pyproject.toml` and locked in `uv.lock`.
+
+```bash
+# Add a production dependency
+uv add <package>
+
+# Add a development dependency
+uv add --optional dev <package>
+
+# Remove a dependency
+uv remove <package>
+```
+
+> ⚠️ **Do not manually edit `uv.lock`** — this file is automatically generated by `uv sync` and `uv add`.
+
+### Environment Variables
+
+Create a `.env` file for local development:
+
+```bash
+cp .env.sample .env
+```
+
+### Start the API
+
+```bash
+uv run uvicorn app.crisalid_taxi:CrisalidTaxi --reload --host 0.0.0.0 --port 8000
+```
+
+### Testing and Code Quality
+
+```bash
+# Run tests
 uv run pytest tests/ -v
 
-# Lancer les tests avec couverture
+# Run tests with coverage
 uv run pytest tests/ -v --cov=app --cov-report=html
 
-# Vérifier le formatage
+# Check formatting
 uv run black --check app/ tests/
 
-# Formater le code
+# Format code
 uv run black app/ tests/
 
-# Linter
+# Lint
 uv run pylint app/
 
-# Vérification de types
+# Type checking
 uv run mypy app/ tests/
 ```
 
 ## 🔍 OpenSearch
 
-OpenSearch 2.11.0 est inclus dans le docker-compose pour la recherche et indexation de la taxonomie.
+OpenSearch 2.11.0 is included in the Docker Compose stack for taxonomy indexing and search.
 
-### Endpoints OpenSearch
+### OpenSearch Endpoints
 
-- **REST API** : http://localhost:9200
-- **Performance Analyzer** : http://localhost:9600
+- **REST API**: http://localhost:9200
+- **Performance Analyzer**: http://localhost:9600
 
-### Commandes utiles
+### Useful Commands
 
 ```bash
-# Vérifier l'état du cluster
+# Check cluster health
 curl http://localhost:9200/_cluster/health
 
-# Lister les indices
+# List indices
 curl http://localhost:9200/_cat/indices
 
-# Créer un test index
+# Create a test index
 curl -X PUT http://localhost:9200/test-index
 
-# Ajouter un document
+# Add a document
 curl -X POST http://localhost:9200/test-index/_doc \
   -H 'Content-Type: application/json' \
   -d '{"name": "Test", "value": 123}'
 
-# Rechercher les documents
+# Search documents
 curl http://localhost:9200/test-index/_search
 ```
 
-## 📦 Dépendances
+## 📦 Dependencies
 
-Gérées via `pyproject.toml` et verrouillées dans `uv.lock`.
+Managed through `pyproject.toml` and locked in `uv.lock`.
 
-### Production
+## 🔒 Security
 
-| Package | Rôle |
-|---------|------|
-| **fastapi** | Framework web API |
-| **uvicorn** | Serveur ASGI |
-| **pydantic** | Validation des données |
-| **pydantic-settings** | Configuration via variables d'environnement |
-| **loguru** | Logging structuré |
-| **httpx** | Client HTTP asynchrone |
-| **aiohttp** | Client HTTP asynchrone (sessions) |
-| **opensearch-py** | Client OpenSearch |
-| **pyyaml** | Parsing YAML |
-| **python-dotenv** | Chargement des fichiers `.env` |
-
-### Développement
-
-| Package | Rôle |
-|---------|------|
-| **pytest** | Framework de tests |
-| **pytest-asyncio** | Support async pour pytest |
-| **pytest-cov** | Couverture de code |
-| **black** | Formatage du code |
-| **isort** | Tri des imports |
-| **flake8** | Linter PEP 8 |
-| **mypy** | Vérification de types |
-| **pylint** | Analyse statique |
-
-## 🔒 Sécurité
-
-- **Secrets** : Tous les secrets sont gérés par variables d'environnement
-- **Fichiers d'environnement** : `.env.local` et `.env` sont ignorés dans git
-- **Configuration** : Utilisez `.env.sample` comme template, jamais commit de vrais secrets
-
-## 📝 Licence
-
-MIT
+- **Secrets**: All secrets are managed through environment variables
+- **Environment Files**: `.env.local` and `.env` are ignored by Git
+- **Configuration**: Use `.env.sample` as a template and never commit real secrets
