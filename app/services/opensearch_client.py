@@ -1,3 +1,4 @@
+import asyncio
 from functools import lru_cache
 
 from loguru import logger
@@ -5,6 +6,7 @@ from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 
 from app.config import get_app_settings
+import numpy as np
 
 
 class OpenSearchClient:
@@ -22,12 +24,11 @@ class OpenSearchClient:
             - embeddings: float32 numpy matrix (n, dims)
             - levels: hierarchy level per record
         """
-        # Local import to avoid hard dependency at import time.
-        import numpy as np
 
         # Query all docs (use scroll). This implementation favors correctness.
         query = {"query": {"match_all": {}}}
-        response = self.client.search(
+        response = await asyncio.to_thread(
+            self.client.search,
             index=index_name, body=query, scroll="1m", size=1000
         )
 
@@ -48,7 +49,9 @@ class OpenSearchClient:
             if not scroll_id:
                 break
 
-            response = self.client.scroll(scroll_id=scroll_id, scroll="1m")
+            response = await asyncio.to_thread(
+                self.client.scroll, scroll_id=scroll_id, scroll="1m"
+            )
             if not response.get("hits", {}).get("hits"):
                 break
 

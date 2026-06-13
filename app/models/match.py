@@ -1,7 +1,6 @@
 """Pydantic models for the /match endpoint."""
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, field_validator
 
 class MatchRequest(BaseModel):
     """Request body for POST /match."""
@@ -15,6 +14,12 @@ class MatchRequest(BaseModel):
         min_length=1,
     )
 
+    @field_validator("texts")
+    @classmethod
+    def texts_no_empty(cls, v: list[str]) -> list[str]:
+        if any(not t or not t.strip() for t in v):
+            raise ValueError("texts cannot contain empty or whitespace-only strings")
+        return v
 
 class ConceptMatchItem(BaseModel):
     concept_uid: str = Field(
@@ -27,11 +32,9 @@ class ConceptMatchItem(BaseModel):
         description="Cosine similarity score (L2-normalised dot product)"
     )
 
-
 class DocumentMatchResult(BaseModel):
     id: str = Field(description="The opaque document identifier supplied in the request")
     matches: list[ConceptMatchItem]
-
 
 class MatchPayload(BaseModel):
     """IKG-ready response payload returned by POST /match."""
@@ -45,4 +48,3 @@ class MatchPayload(BaseModel):
         description="Total number of (document, concept) pairs above threshold"
     )
     results: list[DocumentMatchResult]
-
