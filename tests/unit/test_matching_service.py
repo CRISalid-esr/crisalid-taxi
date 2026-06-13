@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import numpy as np
 import pytest
 
 from app.services.matching.match_store import matches_to_payload
 from app.services.matching.matcher import Match, Matcher
 from app.services.matching.matching_service import MatchingService
-
 
 def test_matcher_returns_empty_when_no_inputs():
     matcher = Matcher(threshold=0.5)
@@ -30,12 +31,11 @@ def test_matcher_returns_empty_when_no_inputs():
         == []
     )
 
-
 def test_matcher_threshold_and_rel_type_mapping_domain_field():
     taxonomy_embs = np.array(
         [
-            [1.0, 0.0],  # perfect cosine with doc0
-            [0.0, 1.0],  # perfect cosine with doc1
+            [1.0, 0.0], # perfect cosine with doc0
+            [0.0, 1.0], # perfect cosine with doc1
         ],
         dtype=np.float32,
     )
@@ -44,8 +44,8 @@ def test_matcher_threshold_and_rel_type_mapping_domain_field():
 
     doc_embs = np.array(
         [
-            [1.0, 0.0],  # aligns with tax-0
-            [0.0, 1.0],  # aligns with tax-1
+            [1.0, 0.0], # aligns with tax-0
+            [0.0, 1.0], # aligns with tax-1
         ],
         dtype=np.float32,
     )
@@ -72,11 +72,38 @@ def test_matcher_threshold_and_rel_type_mapping_domain_field():
     assert m1.rel_type == "HAS_FIELD"
     assert pytest.approx(m1.score, rel=1e-6) == 1.0
 
+def test_matcher_rel_type_subfield_topic():
+    """Test mapping HAS_SUBFIELD and HAS_TOPIC rel_types."""
+    taxonomy_levels = ["subfield", "topic"]
+    taxonomy_ids = ["tax-s", "tax-t"]
+    taxonomy_embs = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+    doc_embs = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+    doc_ids = ["d0", "d1"]
+
+    matcher = Matcher(threshold=0.8)
+    matches = matcher.match(taxonomy_ids, taxonomy_embs, taxonomy_levels, doc_ids, doc_embs)
+
+    assert len(matches) == 2
+    rel_types = {m.rel_type for m in matches}
+    assert rel_types == {"HAS_SUBFIELD", "HAS_TOPIC"}
+
+def test_matcher_score_below_threshold_returns_no_match():
+    """Test that scores < threshold produce no matches."""
+    taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
+    taxonomy_ids = ["tax-0"]
+    taxonomy_levels = ["topic"]
+    doc_embs = np.array([[0.3, 0.95]], dtype=np.float32) # cosine ~0.3
+    doc_embs[0] = doc_embs[0] / np.linalg.norm(doc_embs[0])
+    doc_ids = ["doc-0"]
+
+    matcher = Matcher(threshold=0.5)
+    matches = matcher.match(taxonomy_ids, taxonomy_embs, taxonomy_levels, doc_ids, doc_embs)
+    assert matches == []
 
 def test_matcher_top_k_limits_matches_per_taxonomy_node():
     taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
     taxonomy_ids = ["tax-0"]
-    taxonomy_levels = ["topic"]  # HAS_TOPIC
+    taxonomy_levels = ["topic"] # HAS_TOPIC
 
     doc_embs = np.array(
         [
@@ -103,6 +130,17 @@ def test_matcher_top_k_limits_matches_per_taxonomy_node():
     assert matches[0].rel_type == "HAS_TOPIC"
     assert matches[0].doc_id == "doc-0"
 
+def test_matcher_top_k_zero_returns_empty():
+    """Test top_k=0 returns no matches regardless of scores."""
+    taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
+    taxonomy_ids = ["t0"]
+    taxonomy_levels = ["topic"]
+    doc_embs = np.array([[1.0, 0.0]], dtype=np.float32)
+    doc_ids = ["d0"]
+
+    matcher = Matcher(threshold=0.5, top_k=0)
+    matches = matcher.match(taxonomy_ids, taxonomy_embs, taxonomy_levels, doc_ids, doc_embs)
+    assert matches == []
 
 def test_matcher_chunking_produces_same_results_as_single_chunk():
     taxonomy_embs = np.array(
@@ -129,12 +167,11 @@ def test_matcher_chunking_produces_same_results_as_single_chunk():
         (m.concept_uid, m.doc_id, m.rel_type, round(m.score, 6)) for m in r2
     }
 
-
 def test_matches_to_payload_groups_by_doc_and_rounds():
     matches = [
         Match(concept_uid="c1", doc_id="doc-1", rel_type="HAS_DOMAIN", score=0.1234567),
         Match(concept_uid="c2", doc_id="doc-1", rel_type="HAS_FIELD", score=0.9),
-        Match(concept_uid="c3", doc_id="doc-2", rel_type="HAS_TOPIC", score=0.3333333),
+        Match(concept_uid="c3", doc_id="doc-2", rel_type="HAS_TOPIC", score=0.3333),
     ]
 
     payload = matches_to_payload(matches, model="mymodel")
@@ -153,24 +190,28 @@ def test_matches_to_payload_groups_by_doc_and_rounds():
         ("c2", "HAS_FIELD", round(0.9, 6)),
     }
 
+def test_matches_to_payload_timestamp_format():
+    """Test generated_at follows YYYYMMDDTHHMMSSZ format."""
+    matches = [Match(concept_uid="c1", doc_id="d1", rel_type="HAS_TOPIC", score=0.9)]
+    payload = matches_to_payload(matches, model="bge-m3")
+
+    assert payload["generated_at"].endswith("Z")
+    # Should parse without error
+    datetime.strptime(payload["generated_at"], "%Y%m%dT%H%M%SZ")
 
 @pytest.mark.asyncio
 async def test_matching_service_search_happy_path(monkeypatch):
-    # MatchingService reads several attributes from app settings during __init__.
-    # This repo version doesn't define them; so we patch them via the module-level
-    # get_app_settings used by MatchingService.
     import app.services.matching.matching_service as ms
 
     class DummySettings:
         similarity_threshold = 0.8
         top_k = None
         chunk_size = 5000
-        embedding_api_model = ""  # used by search_as_payload
+        embedding_api_model = ""
 
     monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
 
     service = MatchingService()
-
 
     class DummyEmbeddingService:
         async def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -184,26 +225,8 @@ async def test_matching_service_search_happy_path(monkeypatch):
             tax_types = ["domain", "field"]
             return tax_ids, tax_embs, tax_types
 
-    # MatchingService reads several attributes from app settings during __init__.
-    # This repo version doesn't define them; so we patch them via the module-level
-    # get_app_settings used by MatchingService.
-    from app.services import matching as _matching_pkg  # noqa: F401
-
-    import app.services.matching.matching_service as ms
-
-    class DummySettings:
-        similarity_threshold = 0.8
-        top_k = None
-        chunk_size = 5000
-        embedding_api_model = ""  # used by search_as_payload
-
-    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
-
-    service = MatchingService()
-
     monkeypatch.setattr(service, "_embedding_service", DummyEmbeddingService())
     monkeypatch.setattr(service, "_opensearch", DummyOpensearchClient())
-
 
     matches = await service.search(["t1", "t2"], ["docA", "docB"])
 
@@ -211,7 +234,6 @@ async def test_matching_service_search_happy_path(monkeypatch):
         ("tax-0", "docA", "HAS_DOMAIN"),
         ("tax-1", "docB", "HAS_FIELD"),
     }
-
 
 @pytest.mark.asyncio
 async def test_matching_service_search_empty_texts_returns_empty(monkeypatch):
@@ -228,8 +250,6 @@ async def test_matching_service_search_empty_texts_returns_empty(monkeypatch):
     service = MatchingService()
     assert await service.search([], []) == []
 
-
-
 @pytest.mark.asyncio
 async def test_matching_service_search_length_mismatch_raises(monkeypatch):
     import app.services.matching.matching_service as ms
@@ -245,5 +265,3 @@ async def test_matching_service_search_length_mismatch_raises(monkeypatch):
     service = MatchingService()
     with pytest.raises(ValueError):
         await service.search(["a"], ["id1", "id2"])
-
-
