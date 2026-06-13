@@ -27,6 +27,16 @@ class EmbeddingService:
         self.settings = get_app_settings()
         self.provider = get_embedding_provider(self.settings)
 
+    async def ping(self) -> bool:
+        """Health check: test if embedding provider is reachable."""
+        try:
+            # Test avec un texte dummy court pour éviter de consommer des tokens
+            await self.provider.embed_texts(["ping"])
+            return True
+        except Exception as e:
+            logger.error("Embedding provider ping failed: %s", e)
+            return False
+
     # ------------------------------------------------------------------
     # Low-level helpers
     # ------------------------------------------------------------------
