@@ -42,10 +42,10 @@ This will:
 
 ### 3. Verify Everything Is Running
 
-**Check API health:**
+**Check API readiness:**
 
 ```bash
-curl http://localhost:8000/api/v1/health/
+curl http://localhost:8000/readiness
 ```
 
 **Check OpenSearch health:**
@@ -85,15 +85,26 @@ Interactive API documentation is available at:
 - **ReDoc**: http://localhost:8000/redoc
 - **OpenAPI JSON**: http://localhost:8000/openapi.json
 
-## 🔌 API Endpoints
+## 🔌 Probes & API Endpoints
 
-The service exposes endpoints under the **`/api/v1`** prefix.
+For Kubernetes deployments or basic monitoring:
 
-### Health
+- **Liveness probe**: `GET /liveness` (returns simple `{"status": "healthy"}`)
+- **Readiness probe**: `GET /readiness` (performs full check of OpenSearch and Embedding service dependencies)
+
+### Liveness Probe
 
 ```bash
-curl http://localhost:8000/api/v1/health/
+curl http://localhost:8000/liveness
 ```
+
+### Readiness Probe
+
+```bash
+curl http://localhost:8000/readiness
+```
+
+The service exposes standard API endpoints under the **`/api/v1`** prefix.
 
 ### Test
 

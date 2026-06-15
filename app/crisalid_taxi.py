@@ -46,6 +46,10 @@ class CrisalidTaxi(FastAPI):
 
         self.include_router(api_router, prefix=f"{settings.api_prefix}/{settings.api_version}")
 
+        from app.routes.health import probes_router
+
+        self.include_router(probes_router)
+
         if settings.app_env != AppEnvTypes.TEST:
             logger.remove()
             logger.add(
