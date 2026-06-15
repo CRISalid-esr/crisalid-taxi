@@ -1,26 +1,26 @@
-# 🔌 Référence de l'API & Points d'accès (Endpoints)
+# 🔌 API Reference & Endpoints
 
-L'API exposes standard endpoints under `/api/v1` for classification and testing, as well as root-level probes for orchestration (Kubernetes).
+The API exposes standard endpoints under `/api/v1` for classification and testing, as well as root-level probes for orchestration (e.g., Kubernetes).
 
 ---
 
-## 📚 Points d'accès de Documentation
+## 📚 Documentation Endpoints
 
-Lorsque l'application est démarrée, les documentations interactives sont accessibles aux adresses suivantes :
-*   **Swagger UI (Interactif) :** http://localhost:8000/docs
-*   **ReDoc (Statique) :** http://localhost:8000/redoc
-*   **Schéma OpenAPI JSON brut :** http://localhost:8000/openapi.json
+When the application is running, the interactive documentation is available at the following URLs:
+*   **Swagger UI (Interactive):** http://localhost:8000/docs
+*   **ReDoc (Static):** http://localhost:8000/redoc
+*   **Raw OpenAPI JSON schema:** http://localhost:8000/openapi.json
 
 ---
 
 ## 🏥 Probes & Supervision (Orchestration)
 
-Ces routes sont utiles pour s'assurer que le service est vivant et prêt à recevoir du trafic dans un cluster Kubernetes ou tout autre système de supervision.
+These routes are useful for ensuring the service is alive and ready to receive traffic in a Kubernetes cluster or any other supervision system.
 
 ### 1. Liveness Probe (`GET /liveness`)
-Renvoie un statut simple pour confirmer que le serveur FastAPI est actif et répond.
-*   **Requête :** `GET http://localhost:8000/liveness`
-*   **Réponse attendue (Code 200) :**
+Returns a simple status to confirm that the FastAPI server is running and responding.
+*   **Request:** `GET http://localhost:8000/liveness`
+*   **Expected Response (Code 200):**
     ```json
     {
       "status": "healthy"
@@ -28,9 +28,9 @@ Renvoie un statut simple pour confirmer que le serveur FastAPI est actif et rép
     ```
 
 ### 2. Readiness Probe (`GET /readiness`)
-Vérifie en profondeur l'ensemble des dépendances vitales du service (OpenSearch et le fournisseur d'IA). Si l'un des deux services est inaccessible, un code d'erreur `503 Service Unavailable` est retourné.
-*   **Requête :** `GET http://localhost:8000/readiness`
-*   **Réponse saine (Code 200) :**
+Performs an in-depth check of all vital service dependencies (OpenSearch and the AI provider). If any of the services is unreachable, a `503 Service Unavailable` error code is returned.
+*   **Request:** `GET http://localhost:8000/readiness`
+*   **Healthy Response (Code 200):**
     ```json
     {
       "status": "healthy",
@@ -38,7 +38,7 @@ Vérifie en profondeur l'ensemble des dépendances vitales du service (OpenSearc
       "embedding_model": "connected"
     }
     ```
-*   **Réponse dégradée (Code 503) :**
+*   **Degraded Response (Code 503):**
     ```json
     {
       "detail": {
@@ -51,24 +51,24 @@ Vérifie en profondeur l'ensemble des dépendances vitales du service (OpenSearc
 
 ---
 
-## 🧠 Service de Matching Sémantique
+## 🧠 Semantic Matching Service
 
-### Classification Sémantique (`POST /api/v1/match/`)
-C'est le cœur applicatif de l'application. Elle permet d'envoyer un ou plusieurs textes libres (ex. résumés scientifiques) afin de les associer sémantiquement à un ou plusieurs concepts de la taxonomie OpenAlex.
+### Semantic Classification (`POST /api/v1/match/`)
+This is the core of the application. It allows sending one or multiple free texts (e.g., scientific abstracts) to semantically associate them with one or multiple concepts from the OpenAlex taxonomy.
 
-#### Fonctionnement interne :
-1.  Les textes fournis sont encodés en vecteurs (embeddings) via le service IA.
-2.  L'application charge l'intégralité de l'index d'embeddings OpenAlex en mémoire depuis OpenSearch (en utilisant des requêtes *scroll* optimisées).
-3.  Un calcul matriciel de produit scalaire est effectué en mémoire via **NumPy** pour trouver la similarité cosinus de chaque texte avec tous les concepts.
-4.  Les résultats dont la valeur de similarité est supérieure ou égale à `SIMILARITY_THRESHOLD` sont triés et regroupés.
+#### Internal Workflow:
+1.  The provided texts are encoded into vectors (embeddings) via the AI service.
+2.  The application loads the entire OpenAlex embeddings index into memory from OpenSearch (using optimized *scroll* queries).
+3.  An in-memory dot product matrix calculation is performed via **NumPy** to find the cosine similarity of each text with all concepts.
+4.  Results with a similarity value greater than or equal to `SIMILARITY_THRESHOLD` are sorted and grouped.
 
-#### Format de la Requête
-*   **Point d'accès :** `POST http://localhost:8000/api/v1/match/`
-*   **En-têtes :** `Content-Type: application/json`
-*   **Corps de requête (JSON) :**
-    *   `texts` (list[str]) : Liste des textes à classifier. Ne doit pas contenir de chaîne vide.
-    *   `ids` (list[str]) : Identifiants uniques correspondant à chaque texte (ex. identifiants de nœuds Neo4j).
-    *   *Note : les listes `texts` et `ids` doivent obligatoirement avoir la même taille.*
+#### Request Format
+*   **Endpoint:** `POST http://localhost:8000/api/v1/match/`
+*   **Headers:** `Content-Type: application/json`
+*   **Request Body (JSON):**
+    *   `texts` (list[str]): List of texts to classify. Must not contain empty strings.
+    *   `ids` (list[str]): Unique identifiers corresponding to each text (e.g., Neo4j node identifiers).
+    *   *Note: the `texts` and `ids` lists must have the exact same length.*
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/match/ \
@@ -79,20 +79,20 @@ curl -X POST http://localhost:8000/api/v1/match/ \
   }'
 ```
 
-#### Format de la Réponse (Payload de retour)
-La réponse renvoyée est formatée sous forme de dictionnaire prêt à être inséré dans un graphe de connaissances (IKG) :
-*   `generated_at` (str) : Date/heure UTC au format ISO (`YYYYMMDDTHHMMSSZ`).
-*   `model` (str) : Modèle d'embeddings utilisé.
-*   `query_count` (int) : Nombre de documents passés en entrée.
-*   `total_matches` (int) : Nombre total de correspondances trouvées au-dessus du seuil.
-*   `results` (list) : Liste de résultats regroupés par document d'entrée. Chaque élément contient :
-    *   `id` (str) : L'identifiant opaque transmis.
-    *   `matches` (list) : Liste de concepts appariés, triés par pertinence, contenant :
-        *   `concept_uid` (str) : URI OpenAlex du concept (ex. `https://openalex.org/topics/1111`).
-        *   `rel_type` (str) : Le type de relation de la taxonomie (`HAS_DOMAIN`, `HAS_FIELD`, `HAS_SUBFIELD`, `HAS_TOPIC`).
-        *   `value` (float) : Le score de similarité cosinus arrondi à 6 décimales.
+#### Response Format (Return Payload)
+The response is formatted as a dictionary ready to be inserted into a Knowledge Graph (IKG):
+*   `generated_at` (str): UTC Date/time in ISO format (`YYYYMMDDTHHMMSSZ`).
+*   `model` (str): Embedding model used.
+*   `query_count` (int): Number of input documents.
+*   `total_matches` (int): Total number of matches found above the threshold.
+*   `results` (list): List of results grouped by input document. Each item contains:
+    *   `id` (str): The provided opaque identifier.
+    *   `matches` (list): List of matched concepts, sorted by relevance, containing:
+        *   `concept_uid` (str): OpenAlex URI of the concept (e.g., `https://openalex.org/topics/1111`).
+        *   `rel_type` (str): The taxonomy relationship type (`HAS_DOMAIN`, `HAS_FIELD`, `HAS_SUBFIELD`, `HAS_TOPIC`).
+        *   `value` (float): The cosine similarity score rounded to 6 decimal places.
 
-*Exemple de réponse retournée :*
+*Example Returned Response:*
 ```json
 {
   "generated_at": "20260615T113123Z",
@@ -125,9 +125,9 @@ La réponse renvoyée est formatée sous forme de dictionnaire prêt à être in
 
 ---
 
-## 🧪 Points d'accès de Test
+## 🧪 Test Endpoints
 
-### Endpoints de Test (`GET /api/v1/test/`)
-Ces routes permettent de s'assurer de la communication simple de bout en bout de l'API REST.
-*   `GET /api/v1/test/` : Renvoie un message générique.
-*   `GET /api/v1/test/{name}` : Renvoie un salut personnalisé avec le nom fourni.
+### Test Routes (`GET /api/v1/test/`)
+These routes ensure basic end-to-end communication of the REST API.
+*   `GET /api/v1/test/`: Returns a generic message.
+*   `GET /api/v1/test/{name}`: Returns a personalized greeting with the provided name.

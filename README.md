@@ -4,49 +4,49 @@ FastAPI microservice for managing the OpenAlex taxonomy. A minimal and extensibl
 
 ---
 
-## 🗺️ Documentation Modulaire (Arbre de Navigation)
+## 🗺️ Modular Documentation (Navigation Tree)
 
-Pour plus d'informations sur l'installation, le développement, l'utilisation ou le fonctionnement interne, consultez les sections de la documentation ci-dessous :
+For more information about installation, development, usage, or internal mechanics, please refer to the following documentation sections:
 
 *   📁 **[docs/](docs/)**
-    *   🚀 **[getting_started.md](docs/getting_started.md)** : Démarrage rapide & Docker (Docker Compose, tests de validation initial).
-    *   ⚙️ **[configuration.md](docs/configuration.md)** : Variables d'environnement, secrets et options de configuration du fichier `.env`.
-    *   🔄 **[pipeline.md](docs/pipeline.md)** : Chargement de la taxonomie OpenAlex, cache et détection incrémentale de changements (`StateTracker`).
-    *   🔌 **[api.md](docs/api.md)** : Référence des points d'accès de l'API (`/liveness`, `/readiness`, `POST /match`) et exemples de payloads JSON réels.
-    *   🛠️ **[development.md](docs/development.md)** : Guide de développement local (environnement virtuel `uv`, tests `pytest` et outils de qualité).
+    *   🚀 **[getting_started.md](docs/getting_started.md)**: Quick Start & Docker (Docker Compose, initial validation tests).
+    *   ⚙️ **[configuration.md](docs/configuration.md)**: Environment variables, secrets, and `.env` file configuration options.
+    *   🔄 **[pipeline.md](docs/pipeline.md)**: OpenAlex taxonomy loading, caching, and incremental change detection (`StateTracker`).
+    *   🔌 **[api.md](docs/api.md)**: API endpoints reference (`/liveness`, `/readiness`, `POST /match`) and real JSON payload examples.
+    *   🛠️ **[development.md](docs/development.md)**: Local development guide (virtual environment with `uv`, tests with `pytest`, and code quality tools).
 
-*Cliquez sur l'un des fichiers ci-dessus pour accéder directement à sa documentation.*
-
----
-
-## 📋 Prérequis en bref
-
-*   **Docker & Docker Compose** (pour exécuter l'ensemble de la pile de services)
-*   **Python 3.11+** & **uv** (uniquement pour le développement local hors conteneurs)
+*Click on any of the files above to access its documentation page.*
 
 ---
 
-## ⚡ Démarrage Rapide (Docker)
+## 📋 Prerequisites in brief
 
-1.  **Configurer l'environnement :**
+*   **Docker & Docker Compose** (to run the entire service stack)
+*   **Python 3.11+** & **uv** (only for local development outside containers)
+
+---
+
+## ⚡ Quick Start (Docker)
+
+1.  **Configure the environment:**
     ```bash
     cp .env.sample .env
     ```
-2.  **Démarrer la pile complète (FastAPI, OpenSearch, Dashboards) :**
+2.  **Start the entire stack (FastAPI, OpenSearch, Dashboards):**
     ```bash
     docker-compose up -d
     ```
-3.  **Tester si l'API est prête :**
+3.  **Test if the API is ready:**
     ```bash
     curl http://localhost:8000/readiness
     ```
 
-Pour des instructions de déploiement complètes, consultez le guide [Démarrage rapide & Docker](docs/getting_started.md).
+For full deployment instructions, see the [Quick Start & Docker](docs/getting_started.md) guide.
 
 ---
 
-## 🔒 Sécurité
+## 🔒 Security
 
-*   **Secrets** : Tous les secrets sont gérés exclusivement par des variables d'environnement.
-*   **Fichiers d'environnement** : `.env.local` et `.env` sont ignorés par Git.
-*   **Configuration** : Utilisez `.env.sample` comme modèle et ne committez jamais de secrets réels.
+*   **Secrets**: All secrets are managed exclusively through environment variables.
+*   **Environment Files**: `.env.local` and `.env` are ignored by Git.
+*   **Configuration**: Use `.env.sample` as a template and never commit real secrets.

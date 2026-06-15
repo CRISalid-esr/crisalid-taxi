@@ -1,57 +1,57 @@
-# 🛠️ Guide de Développement local, Tests & Qualité de code
+# 🛠️ Local Development, Testing & Code Quality Guide
 
-Ce document détaille la configuration de l'environnement de développement local, la gestion des dépendances et les outils de qualité de code (linters, testeurs, formateurs).
+This document details the local development environment setup, dependency management, and code quality tools (linters, testers, formatters).
 
 ---
 
-## 💻 Configuration de l'environnement local
+## 💻 Local Environment Setup
 
-### 1. Prérequis
+### 1. Prerequisites
 
-Assurez-vous d'avoir Python 3.11+ et l'outil moderne de gestion de paquets Python `uv` installé sur votre machine.
+Ensure you have Python 3.11+ and the modern Python package management tool `uv` installed on your machine.
 
-#### Installer `uv` si nécessaire :
+#### Install `uv` if necessary:
 ```bash
 pip install uv
 ```
 
-### 2. Installation des Dépendances
+### 2. Installing Dependencies
 
-Synchronisez l'environnement virtuel local `.venv` à l'aide de `uv` :
+Synchronize the local virtual environment `.venv` using `uv`:
 
 ```bash
-# Pour installer uniquement les dépendances de production
+# To install only production dependencies
 uv sync
 
-# Pour installer les dépendances de développement (tests, linters, etc.)
+# To install development dependencies (tests, linters, etc.)
 uv sync --all-extras
 ```
 
 ---
 
-## 📦 Gestion des Dépendances
+## 📦 Dependency Management
 
-Le projet utilise `pyproject.toml` pour déclarer les dépendances et un fichier `uv.lock` figé pour garantir la reproductibilité.
+The project uses `pyproject.toml` to declare dependencies and a frozen `uv.lock` file to guarantee reproducibility.
 
-> ⚠️ **Important :** Ne modifiez jamais manuellement le fichier `uv.lock`. Laissez les utilitaires `uv` s'en charger.
+> ⚠️ **Important:** Never manually edit the `uv.lock` file. Let the `uv` utilities handle it.
 
-### Commandes utiles pour gérer les dépendances :
+### Useful commands to manage dependencies:
 ```bash
-# Ajouter une dépendance de production
-uv add <nom-du-package>
+# Add a production dependency
+uv add <package-name>
 
-# Ajouter une dépendance optionnelle de développement
-uv add --optional dev <nom-du-package>
+# Add an optional development dependency
+uv add --optional dev <package-name>
 
-# Supprimer une dépendance
-uv remove <nom-du-package>
+# Remove a dependency
+uv remove <package-name>
 ```
 
 ---
 
-## ⚡ Démarrer l'API localement (Sans Docker)
+## ⚡ Start the API locally (Without Docker)
 
-Pour exécuter le serveur API localement en mode rechargement automatique (Hot Reload) :
+To run the API server locally in automatic reload mode (Hot Reload):
 
 ```bash
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -59,40 +59,40 @@ uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 🧪 Validation & Qualité du Code
+## 🧪 Code Validation & Quality
 
-Avant de soumettre du code, veuillez exécuter les vérifications de qualité de code suivantes.
+Before submitting code, please run the following code quality checks.
 
-### 1. Exécuter la Suite de Tests
+### 1. Run the Test Suite
 ```bash
-# Lancement des tests (unitaires & intégration)
+# Run tests (unit & integration)
 uv run pytest tests/ -v
 
-# Lancement des tests avec calcul de couverture et rapport HTML
+# Run tests with coverage calculation and HTML report
 uv run pytest tests/ -v --cov=app --cov-report=html
 ```
 
-### 2. Formatage du Code (Black & Isort)
-Le projet utilise `black` pour le formatage et `isort` pour le tri des imports.
+### 2. Code Formatting (Black & Isort)
+The project uses `black` for formatting and `isort` for import sorting.
 ```bash
-# Vérifier si des fichiers nécessitent un formatage
+# Check if any files need formatting
 uv run black --check app/ tests/
 
-# Appliquer automatiquement le formatage Black
+# Automatically apply Black formatting
 uv run black app/ tests/
 
-# Trier les imports automatiquement
+# Automatically sort imports
 uv run isort app/ tests/
 ```
 
-### 3. Analyse Statique & Linting (Pylint)
+### 3. Static Analysis & Linting (Pylint)
 ```bash
-# Analyse du code avec Pylint
+# Analyze the code with Pylint
 uv run pylint app/
 ```
 
-### 4. Vérification du Typage (Mypy)
+### 4. Type Checking (Mypy)
 ```bash
-# Analyse de typage statique
+# Static type analysis
 uv run mypy app/ tests/
 ```
