@@ -127,11 +127,4 @@ The response is formatted as a dictionary ready to be inserted into a Knowledge 
 }
 ```
 
----
 
-## 🧪 Test Endpoints
-
-### Test Routes (`GET /api/v1/test/`)
-These routes ensure basic end-to-end communication of the REST API.
-*   `GET /api/v1/test/`: Returns a generic message.
-*   `GET /api/v1/test/{name}`: Returns a personalized greeting with the provided name.
