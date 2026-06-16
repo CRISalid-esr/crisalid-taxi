@@ -69,6 +69,7 @@ This is the core of the application. It allows sending one or multiple free text
     *   `inputs` (list[object]): List of input objects to classify. Each object contains:
         *   `id` (str): Unique identifier corresponding to the text (e.g., Neo4j node identifier).
         *   `text` (str): Text to classify. Must not be empty.
+    *   `similarity_threshold` (float, optional): Custom threshold between `0.0` and `1.0` to override the server's default value.
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/match/ \
@@ -77,7 +78,8 @@ curl -X POST http://localhost:8000/api/v1/match/ \
     "inputs": [
       {"id": "doc-uuid-1", "text": "Machine learning algorithms for quantum computing physics simulations"},
       {"id": "doc-uuid-2", "text": "Taxonomy of soccer training methods"}
-    ]
+    ],
+    "similarity_threshold": 0.65
   }'
 ```
 

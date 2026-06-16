@@ -40,6 +40,7 @@ class MatchingService:
         self,
         texts: list[str],
         ids: list[str],
+        similarity_threshold: float | None = None,
     ) -> list[Match]:
         """Embed *texts* on the fly and return matches against the taxonomy.
 
@@ -72,14 +73,17 @@ class MatchingService:
         logger.info(
             f"MatchingService: running Matcher ({len(tax_ids)} nodes × {len(ids)} docs)…"
         )
-        return self._matcher.match(tax_ids, tax_embs, tax_types, ids, query_embs)
+        return self._matcher.match(
+            tax_ids, tax_embs, tax_types, ids, query_embs, threshold=similarity_threshold
+        )
 
     async def search_as_payload(
         self,
         texts: list[str],
         ids: list[str],
+        similarity_threshold: float | None = None,
     ) -> dict:
         """Same as :meth:`search` but returns the IKG-ready JSON payload dict."""
-        matches = await self.search(texts, ids)
+        matches = await self.search(texts, ids, similarity_threshold=similarity_threshold)
         return matches_to_payload(matches, model=self._model_name)
 

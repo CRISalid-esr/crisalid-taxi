@@ -20,6 +20,12 @@ class MatchRequest(BaseModel):
         description="List of inputs containing an id and text to classify.",
         min_length=1,
     )
+    similarity_threshold: float | None = Field(
+        default=None,
+        description="Optional custom similarity threshold (e.g., 0.52). Overrides the default server setting.",
+        ge=0.0,
+        le=1.0,
+    )
 
 class ConceptMatchItem(BaseModel):
     concept_uid: str = Field(

@@ -29,7 +29,9 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
 
     try:
         service = MatchingService()
-        payload = await service.search_as_payload(texts, ids)
+        payload = await service.search_as_payload(
+            texts, ids, similarity_threshold=request.similarity_threshold
+        )
         return MatchPayload(**payload)
     except Exception as exc:
         logger.error("Match failed: %s", exc)

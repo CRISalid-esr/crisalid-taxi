@@ -53,7 +53,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
         ],
     }
 
-    async def fake_search_as_payload(self, texts, ids):
+    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
         assert texts == ["t1"]
         assert ids == ["doc-1"]
         return payload
@@ -88,7 +88,7 @@ async def test_post_match_multiple_docs(client, monkeypatch):
         ],
     }
 
-    async def fake_search_as_payload(self, texts, ids):
+    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
         assert len(texts) == 2
         assert len(ids) == 2
         return payload
@@ -110,7 +110,7 @@ async def test_post_match_service_error_returns_500(client, monkeypatch):
     """Should return 500 when MatchingService raises exception."""
     from app.services.matching import matching_service as ms
 
-    async def fake_search_as_payload(self, texts, ids):
+    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
         raise RuntimeError("OpenSearch connection failed")
 
     monkeypatch.setattr(ms.MatchingService, "search_as_payload", fake_search_as_payload)

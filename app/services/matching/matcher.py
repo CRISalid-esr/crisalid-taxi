@@ -50,6 +50,7 @@ class Matcher:
         taxonomy_levels: list[str],
         doc_ids: list[str],
         doc_embeddings: np.ndarray,
+        threshold: float | None = None,
     ) -> list[Match]:
         """Compute similarity between each taxonomy node and each query document.
 
@@ -60,6 +61,7 @@ class Matcher:
 
         results: list[Match] = []
         n_tax = len(taxonomy_ids)
+        effective_threshold = threshold if threshold is not None else self.threshold
 
         for chunk_start in range(0, n_tax, self.chunk_size):
             chunk_end = min(chunk_start + self.chunk_size, n_tax)
@@ -73,7 +75,7 @@ class Matcher:
                 row = sims[local_i]
                 rel_type = _level_to_rel(level)
 
-                above = np.where(row >= self.threshold)[0]
+                above = np.where(row >= effective_threshold)[0]
                 if self.top_k is not None and len(above) > self.top_k:
                     above = above[np.argsort(row[above])[::-1][: self.top_k]]
 
