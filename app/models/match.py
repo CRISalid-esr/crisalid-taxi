@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field, field_validator
 
 class MatchInputItem(BaseModel):
-    id: str = Field(description="Opaque document identifier (e.g. Neo4j element_id).")
+    id: str = Field(description="Opaque document identifier (e.g. an application-specific UUID).")
     text: str = Field(description="Query text to classify (e.g. publication abstract).")
 
     @field_validator("text")
