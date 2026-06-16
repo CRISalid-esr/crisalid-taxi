@@ -66,16 +66,18 @@ This is the core of the application. It allows sending one or multiple free text
 *   **Endpoint:** `POST http://localhost:8000/api/v1/match/`
 *   **Headers:** `Content-Type: application/json`
 *   **Request Body (JSON):**
-    *   `texts` (list[str]): List of texts to classify. Must not contain empty strings.
-    *   `ids` (list[str]): Unique identifiers corresponding to each text (e.g., Neo4j node identifiers).
-    *   *Note: the `texts` and `ids` lists must have the exact same length.*
+    *   `inputs` (list[object]): List of input objects to classify. Each object contains:
+        *   `id` (str): Unique identifier corresponding to the text (e.g., Neo4j node identifier).
+        *   `text` (str): Text to classify. Must not be empty.
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/match/ \
   -H 'Content-Type: application/json' \
   -d '{
-    "texts": ["Machine learning algorithms for quantum computing physics simulations", "Taxonomy of soccer training methods"],
-    "ids": ["doc-uuid-1", "doc-uuid-2"]
+    "inputs": [
+      {"id": "doc-uuid-1", "text": "Machine learning algorithms for quantum computing physics simulations"},
+      {"id": "doc-uuid-2", "text": "Taxonomy of soccer training methods"}
+    ]
   }'
 ```
 

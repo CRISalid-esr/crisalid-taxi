@@ -4,18 +4,18 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_post_match_validation_error(client):
-    """Should return 422 when texts and ids lengths differ."""
-    resp = client.post("/api/v1/match/", json={"texts": ["t1"], "ids": []})
+    """Should return 422 when an item is missing id or text."""
+    resp = client.post("/api/v1/match/", json={"inputs": [{"text": "t1"}]})
     assert resp.status_code == 422
     detail = resp.json()["detail"]
-    assert any(err["loc"] == ["body", "ids"] and "at least 1 item" in err["msg"] for err in detail)
+    assert any("id" in str(err["loc"]) for err in detail)
 
 @pytest.mark.asyncio
 async def test_post_match_empty_string_validation(client):
     """Should return 422 when texts contains empty or whitespace-only string."""
     resp = client.post(
         "/api/v1/match/",
-        json={"texts": [" ", "ok"], "ids": ["doc-1", "doc-2"]}
+        json={"inputs": [{"id": "doc-1", "text": " "}, {"id": "doc-2", "text": "ok"}]}
     )
     assert resp.status_code == 422
     detail = resp.json()["detail"][0]
@@ -23,11 +23,11 @@ async def test_post_match_empty_string_validation(client):
 
 @pytest.mark.asyncio
 async def test_post_match_empty_texts_list(client):
-    """Should return 422 when texts list is empty due to min_length=1 in MatchRequest."""
-    resp = client.post("/api/v1/match/", json={"texts": [], "ids": []})
+    """Should return 422 when inputs list is empty due to min_length=1 in MatchRequest."""
+    resp = client.post("/api/v1/match/", json={"inputs": []})
     assert resp.status_code == 422
     # Pydantic List min_length=1 validation
-    assert any(err["loc"] == ["body", "texts"] for err in resp.json()["detail"])
+    assert any(err["loc"] == ["body", "inputs"] for err in resp.json()["detail"])
 
 @pytest.mark.asyncio
 async def test_post_match_returns_payload(client, monkeypatch):
@@ -60,7 +60,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
 
     monkeypatch.setattr(ms.MatchingService, "search_as_payload", fake_search_as_payload)
 
-    resp = client.post("/api/v1/match/", json={"texts": ["t1"], "ids": ["doc-1"]})
+    resp = client.post("/api/v1/match/", json={"inputs": [{"id": "doc-1", "text": "t1"}]})
     assert resp.status_code == 200
     body = resp.json()
     assert body["model"] == "dummy-model"
@@ -97,7 +97,7 @@ async def test_post_match_multiple_docs(client, monkeypatch):
 
     resp = client.post(
         "/api/v1/match/",
-        json={"texts": ["text1", "text2"], "ids": ["doc-1", "doc-2"]}
+        json={"inputs": [{"id": "doc-1", "text": "text1"}, {"id": "doc-2", "text": "text2"}]}
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -115,7 +115,7 @@ async def test_post_match_service_error_returns_500(client, monkeypatch):
 
     monkeypatch.setattr(ms.MatchingService, "search_as_payload", fake_search_as_payload)
 
-    resp = client.post("/api/v1/match/", json={"texts": ["t1"], "ids": ["doc-1"]})
+    resp = client.post("/api/v1/match/", json={"inputs": [{"id": "doc-1", "text": "t1"}]})
     assert resp.status_code == 500
     assert "detail" in resp.json()
     assert "OpenSearch connection failed" in resp.json()["detail"]

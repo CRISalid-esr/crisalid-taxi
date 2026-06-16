@@ -15,29 +15,21 @@ router = APIRouter()
     summary="Classify documents against the OpenAlex taxonomy",
 )
 async def match_taxonomy(request: MatchRequest) -> MatchPayload:
-    """Embed the provided texts and return matching taxonomy nodes.
+    """Embed the provided inputs and return matching taxonomy nodes.
 
-    - **texts**: list of free-text queries (e.g. publication abstracts)
-    - **ids**: one opaque identifier per text (e.g. Neo4j element_id)
+    - **inputs**: list of objects containing id and text
 
-    Both lists must have the same length. Query embeddings are computed on the
-    fly and are never stored.
+    Query embeddings are computed on the fly and are never stored.
     """
 
-    if len(request.texts) != len(request.ids):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "texts and ids must have the same length "
-                f"({len(request.texts)} vs {len(request.ids)})"
-            ),
-        )
+    texts = [item.text for item in request.inputs]
+    ids = [item.id for item in request.inputs]
 
-    logger.info("POST /match — %d document(s)", len(request.texts))
+    logger.info("POST /match — %d document(s)", len(texts))
 
     try:
         service = MatchingService()
-        payload = await service.search_as_payload(request.texts, request.ids)
+        payload = await service.search_as_payload(texts, ids)
         return MatchPayload(**payload)
     except Exception as exc:
         logger.error("Match failed: %s", exc)

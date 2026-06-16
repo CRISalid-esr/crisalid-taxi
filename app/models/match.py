@@ -2,24 +2,24 @@
 
 from pydantic import BaseModel, Field, field_validator
 
+class MatchInputItem(BaseModel):
+    id: str = Field(description="Opaque document identifier (e.g. Neo4j element_id).")
+    text: str = Field(description="Query text to classify (e.g. publication abstract).")
+
+    @field_validator("text")
+    @classmethod
+    def text_no_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("text cannot be empty or whitespace-only")
+        return v
+
 class MatchRequest(BaseModel):
     """Request body for POST /match."""
 
-    texts: list[str] = Field(
-        description="Query texts to classify (e.g. publication abstracts).",
+    inputs: list[MatchInputItem] = Field(
+        description="List of inputs containing an id and text to classify.",
         min_length=1,
     )
-    ids: list[str] = Field(
-        description="Opaque document identifiers, one per text (e.g. Neo4j element_id).",
-        min_length=1,
-    )
-
-    @field_validator("texts")
-    @classmethod
-    def texts_no_empty(cls, v: list[str]) -> list[str]:
-        if any(not t or not t.strip() for t in v):
-            raise ValueError("texts cannot contain empty or whitespace-only strings")
-        return v
 
 class ConceptMatchItem(BaseModel):
     concept_uid: str = Field(
