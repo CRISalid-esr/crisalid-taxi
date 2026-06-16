@@ -89,6 +89,7 @@ The response is formatted as a dictionary ready to be inserted into a Knowledge 
 *   `model` (str): Embedding model used.
 *   `query_count` (int): Number of input documents.
 *   `total_matches` (int): Total number of matches found above the threshold.
+*   `similarity_threshold` (float): Threshold used to filter matches.
 *   `results` (list): List of results grouped by input document. Each item contains:
     *   `id` (str): The provided opaque identifier.
     *   `matches` (list): List of matched concepts, sorted by relevance, containing:
@@ -103,6 +104,7 @@ The response is formatted as a dictionary ready to be inserted into a Knowledge 
   "model": "bge-m3",
   "query_count": 2,
   "total_matches": 2,
+  "similarity_threshold": 0.65,
   "results": [
     {
       "id": "doc-uuid-1",

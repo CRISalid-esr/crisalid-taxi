@@ -174,11 +174,12 @@ def test_matches_to_payload_groups_by_doc_and_rounds():
         Match(concept_uid="c3", doc_id="doc-2", rel_type="HAS_TOPIC", score=0.3333),
     ]
 
-    payload = matches_to_payload(matches, model="mymodel")
+    payload = matches_to_payload(matches, model="mymodel", similarity_threshold=0.52)
 
     assert payload["model"] == "mymodel"
     assert payload["query_count"] == 2
     assert payload["total_matches"] == 3
+    assert payload["similarity_threshold"] == 0.52
     assert "generated_at" in payload
 
     results_by_id = {r["id"]: r for r in payload["results"]}

@@ -39,6 +39,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
         "model": "dummy-model",
         "query_count": 1,
         "total_matches": 1,
+        "similarity_threshold": 0.52,
         "results": [
             {
                 "id": "doc-1",
@@ -66,6 +67,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
     assert body["model"] == "dummy-model"
     assert body["query_count"] == 1
     assert body["total_matches"] == 1
+    assert body["similarity_threshold"] == 0.52
     assert body["generated_at"] == "20260101T000Z"
     assert body["results"][0]["id"] == "doc-1"
     assert body["results"][0]["matches"][0]["concept_uid"] == "https://openalex.org/domains/1"
@@ -82,6 +84,7 @@ async def test_post_match_multiple_docs(client, monkeypatch):
         "model": "dummy-model",
         "query_count": 2,
         "total_matches": 3,
+        "similarity_threshold": 0.52,
         "results": [
             {"id": "doc-1", "matches": [{"concept_uid": "c1", "rel_type": "HAS_DOMAIN", "value": 0.9}]},
             {"id": "doc-2", "matches": [{"concept_uid": "c2", "rel_type": "HAS_FIELD", "value": 0.8}, {"concept_uid": "c3", "rel_type": "HAS_TOPIC", "value": 0.7}]},
