@@ -42,10 +42,13 @@ class EmbeddingService:
     # ------------------------------------------------------------------
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        return await self.provider.embed_texts(texts)
+        # bge-m3 is case-sensitive (0.93 cosine between "X" and "x").
+        # Lowercasing here ensures queries and taxonomy texts land in the same
+        # embedding space regardless of the caller's input casing.
+        return await self.provider.embed_texts([t.lower() for t in texts])
 
     async def embed_one(self, text: str) -> list[float]:
-        vectors = await self.provider.embed_texts([text])
+        vectors = await self.provider.embed_texts([text.lower()])
         return vectors[0]
 
     async def embed_with_dedup(

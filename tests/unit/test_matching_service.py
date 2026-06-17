@@ -266,3 +266,56 @@ async def test_matching_service_search_length_mismatch_raises(monkeypatch):
     service = MatchingService()
     with pytest.raises(ValueError):
         await service.search(["a"], ["id1", "id2"])
+
+@pytest.mark.asyncio
+async def test_matching_service_case_insensitive(monkeypatch):
+    import app.services.matching.matching_service as ms
+
+    class DummySettings:
+        similarity_threshold = 0.5
+        top_k = None
+        chunk_size = 5000
+        embedding_api_model = ""
+
+    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
+
+    service = MatchingService()
+
+    class DummyEmbeddingService:
+        async def embed_texts(self, texts):
+            # on simule un embedding stable (peu importe le casing)
+            return [[1.0, 0.0]]
+
+    class DummyOpensearchClient:
+        async def get_all_embeddings(self, index_name):
+            return (
+                ["tax-ml"],
+                np.array([[1.0, 0.0]], dtype=np.float32),
+                ["topic"],
+            )
+
+    monkeypatch.setattr(service, "_embedding_service", DummyEmbeddingService())
+    monkeypatch.setattr(service, "_opensearch", DummyOpensearchClient())
+
+    res1 = await service.search(["machine learning"], ["doc1"])
+    res2 = await service.search(["Machine Learning"], ["doc2"])
+
+    assert len(res1) == len(res2)
+
+def test_embedding_lowercasing_is_applied(monkeypatch):
+    from app.services.embeddings.embedding_service import EmbeddingService
+
+    calls = {}
+
+    class DummyProvider:
+        async def embed_texts(self, texts):
+            calls["texts"] = texts
+            return [[0.1, 0.2]]
+
+    service = EmbeddingService()
+    service.provider = DummyProvider()
+
+    import asyncio
+    asyncio.run(service.embed_texts(["Machine Learning"]))
+
+    assert calls["texts"] == ["machine learning"]
