@@ -1,10 +1,11 @@
-name: CI
+name: crisalid-taxi CI
 
 on:
-  push:
-    branches: [main, dev-main, "1-*"]
   pull_request:
-    branches: [main, dev-main]
+    branches: [ "dev-main" ]
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -46,8 +47,13 @@ jobs:
         run: |
           uv run pytest tests/ -v --cov=app --cov-report=xml || uv run pytest tests/ -v
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-        continue-on-error: true
+      # Upload coverage to Codecov
+      # Désactivé temporairement : le rapport coverage.xml est toujours généré
+      # par pytest (--cov-report=xml), mais il n'est plus envoyé à Codecov.
+      #
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v5
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage.xml
+      #   continue-on-error: true
