@@ -73,6 +73,11 @@ class AppSettings(BaseSettings):
     embedding_timeout_seconds: int = 30
     embedding_batch_size: int = 32
 
+    # Retry Configuration
+    retry_max_attempts: int = 3
+    retry_min_wait: int = 2
+    retry_max_wait: int = 10
+
     # Matching Configuration
     # Cosine similarity threshold used by the matcher.
     similarity_threshold: float = 0.52

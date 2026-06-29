@@ -9,13 +9,16 @@ from opensearchpy.helpers import bulk
 
 import numpy as np
 
-from app.config import get_app_settings
+from app.config import get_app_settings, settings
 
 
 class OpenSearchClient:
     """OpenSearch client wrapper."""
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    @retry(
+        stop=stop_after_attempt(settings.retry_max_attempts),
+        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+    )
     async def get_all_embeddings(
         self, index_name: str
     ) -> tuple[list[str], "np.ndarray", list[str]]:
@@ -102,7 +105,10 @@ class OpenSearchClient:
             logger.error(f"Failed to get OpenSearch info: {e}")
             return {}
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    @retry(
+        stop=stop_after_attempt(settings.retry_max_attempts),
+        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+    )
     def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
         """Ensure the OpenSearch index exists with a vector-compatible mapping."""
         if self.client.indices.exists(index=index_name):
@@ -129,7 +135,10 @@ class OpenSearchClient:
 
         self.client.indices.create(index=index_name, body=mapping)
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    @retry(
+        stop=stop_after_attempt(settings.retry_max_attempts),
+        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+    )
     def save_embeddings(self, index_name: str, docs: list[dict]) -> None:
         actions = [
             {
