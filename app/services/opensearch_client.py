@@ -1,5 +1,6 @@
 import asyncio
 from functools import lru_cache
+from typing import Any
 
 from loguru import logger
 from opensearchpy import OpenSearch
@@ -27,7 +28,6 @@ class OpenSearchClient:
         """
 
         # Query all docs (use scroll). This implementation favors correctness.
-        from typing import Any
         query: dict[str, Any] = {"query": {"match_all": {}}}
         response = await asyncio.to_thread(
             self.client.search, index=index_name, body=query, scroll="1m", size=1000

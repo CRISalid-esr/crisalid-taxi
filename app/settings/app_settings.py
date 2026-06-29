@@ -9,7 +9,7 @@ import os
 from typing import ClassVar, TextIO, Any, cast
 
 import yaml
-from pydantic import ConfigDict, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.settings.app_env_types import AppEnvTypes
