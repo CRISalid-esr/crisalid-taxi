@@ -17,7 +17,11 @@ class OpenSearchClient:
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
-        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+        wait=wait_exponential(
+            multiplier=1,
+            min=settings.retry_min_wait,
+            max=settings.retry_max_wait,
+        ),
     )
     async def get_all_embeddings(
         self, index_name: str
@@ -68,18 +72,18 @@ class OpenSearchClient:
 
     def __init__(self):
         """Initialize OpenSearch client."""
-        settings = get_app_settings()
+        app_settings = get_app_settings()
 
         logger.debug(
-            f"Connecting to OpenSearch at {settings.opensearch_scheme}://"
-            f"{settings.opensearch_host}:{settings.opensearch_port}"
+            f"Connecting to OpenSearch at {app_settings.opensearch_scheme}://"
+            f"{app_settings.opensearch_host}:{app_settings.opensearch_port}"
         )
         self.client = OpenSearch(
             hosts=[
                 {
-                    "host": settings.opensearch_host,
-                    "port": settings.opensearch_port,
-                    "scheme": settings.opensearch_scheme,
+                    "host": app_settings.opensearch_host,
+                    "port": app_settings.opensearch_port,
+                    "scheme": app_settings.opensearch_scheme,
                 }
             ],
             verify_certs=False,
@@ -107,7 +111,11 @@ class OpenSearchClient:
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
-        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+        wait=wait_exponential(
+            multiplier=1,
+            min=settings.retry_min_wait,
+            max=settings.retry_max_wait,
+        ),
     )
     def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
         """Ensure the OpenSearch index exists with a vector-compatible mapping."""
@@ -137,7 +145,11 @@ class OpenSearchClient:
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
-        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+        wait=wait_exponential(
+            multiplier=1,
+            min=settings.retry_min_wait,
+            max=settings.retry_max_wait,
+        ),
     )
     def save_embeddings(self, index_name: str, docs: list[dict]) -> None:
         actions = [
