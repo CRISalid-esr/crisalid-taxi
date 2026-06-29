@@ -59,8 +59,6 @@ class StartupPipeline:
             embedded = self._embedding.embed_openalex_items(items)
             records = await embedded if hasattr(embedded, "__await__") else embedded
 
-
-
             # 3b. Ensure OpenSearch index mapping for vectors
             if records:
                 dims = len(records[0].embedding)
@@ -84,7 +82,6 @@ class StartupPipeline:
                 index_name="openalex_embeddings",
                 docs=docs,
             )
-
 
             # Log a preview of the generated embeddings in JSON format
             logger.info(f"── Résultats OpenAlex au format JSON ({len(records)} générés) ──")

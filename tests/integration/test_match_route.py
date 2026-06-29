@@ -2,6 +2,7 @@
 
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_post_match_validation_error(client):
     """Should return 422 when an item is missing id or text."""
@@ -10,16 +11,18 @@ async def test_post_match_validation_error(client):
     detail = resp.json()["detail"]
     assert any("id" in str(err["loc"]) for err in detail)
 
+
 @pytest.mark.asyncio
 async def test_post_match_empty_string_validation(client):
     """Should return 422 when texts contains empty or whitespace-only string."""
     resp = client.post(
         "/api/v1/match/",
-        json={"inputs": [{"id": "doc-1", "text": " "}, {"id": "doc-2", "text": "ok"}]}
+        json={"inputs": [{"id": "doc-1", "text": " "}, {"id": "doc-2", "text": "ok"}]},
     )
     assert resp.status_code == 422
     detail = resp.json()["detail"][0]
     assert "whitespace-only" in detail["msg"]
+
 
 @pytest.mark.asyncio
 async def test_post_match_empty_texts_list(client):
@@ -28,6 +31,7 @@ async def test_post_match_empty_texts_list(client):
     assert resp.status_code == 422
     # Pydantic List min_length=1 validation
     assert any(err["loc"] == ["body", "inputs"] for err in resp.json()["detail"])
+
 
 @pytest.mark.asyncio
 async def test_post_match_returns_payload(client, monkeypatch):
@@ -74,6 +78,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
     assert body["results"][0]["matches"][0]["rel_type"] == "HAS_DOMAIN"
     assert body["results"][0]["matches"][0]["value"] == 0.9
 
+
 @pytest.mark.asyncio
 async def test_post_match_multiple_docs(client, monkeypatch):
     """Should handle multiple documents correctly."""
@@ -86,8 +91,17 @@ async def test_post_match_multiple_docs(client, monkeypatch):
         "total_matches": 3,
         "similarity_threshold": 0.52,
         "results": [
-            {"id": "doc-1", "matches": [{"concept_uid": "c1", "rel_type": "HAS_DOMAIN", "value": 0.9}]},
-            {"id": "doc-2", "matches": [{"concept_uid": "c2", "rel_type": "HAS_FIELD", "value": 0.8}, {"concept_uid": "c3", "rel_type": "HAS_TOPIC", "value": 0.7}]},
+            {
+                "id": "doc-1",
+                "matches": [{"concept_uid": "c1", "rel_type": "HAS_DOMAIN", "value": 0.9}],
+            },
+            {
+                "id": "doc-2",
+                "matches": [
+                    {"concept_uid": "c2", "rel_type": "HAS_FIELD", "value": 0.8},
+                    {"concept_uid": "c3", "rel_type": "HAS_TOPIC", "value": 0.7},
+                ],
+            },
         ],
     }
 
@@ -100,13 +114,14 @@ async def test_post_match_multiple_docs(client, monkeypatch):
 
     resp = client.post(
         "/api/v1/match/",
-        json={"inputs": [{"id": "doc-1", "text": "text1"}, {"id": "doc-2", "text": "text2"}]}
+        json={"inputs": [{"id": "doc-1", "text": "text1"}, {"id": "doc-2", "text": "text2"}]},
     )
     assert resp.status_code == 200
     body = resp.json()
     assert body["query_count"] == 2
     assert body["total_matches"] == 3
     assert len(body["results"]) == 2
+
 
 @pytest.mark.asyncio
 async def test_post_match_service_error_returns_500(client, monkeypatch):

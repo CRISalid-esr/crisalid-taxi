@@ -133,4 +133,3 @@ async def test_startup_pipeline_records_empty_skips_index_and_saves_empty_docs(
     save_kwargs = mock_opensearch_client.save_embeddings.call_args.kwargs
     assert save_kwargs["index_name"] == "openalex_embeddings"
     assert save_kwargs["docs"] == []
-

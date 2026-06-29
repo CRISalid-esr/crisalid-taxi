@@ -9,9 +9,11 @@ from app.services.pipeline import StartupPipeline
 
 
 @pytest.mark.asyncio
-async def test_startup_pipeline_full_flow(temp_openalex_dir, mock_embedding_service, mock_opensearch_client):
+async def test_startup_pipeline_full_flow(
+    temp_openalex_dir, mock_embedding_service, mock_opensearch_client
+):
     """Test the complete StartupPipeline execution flow with mocked external services."""
-    
+
     # Initialize loader pointing to temporary mock dataset
     loader = OpenAlexLoader(temp_openalex_dir)
 
@@ -45,12 +47,10 @@ async def test_startup_pipeline_full_flow(temp_openalex_dir, mock_embedding_serv
     assert isinstance(ensure_kwargs["dims"], int)
     assert ensure_kwargs["dims"] > 0
 
-
     # Get arguments sent to save_embeddings
     call_args = mock_opensearch_client.save_embeddings.call_args[1]
     assert call_args["index_name"] == "openalex_embeddings"
     assert len(call_args["docs"]) == 4  # 1 domain, 1 field, 1 subfield, 1 topic
-
 
     # Check state file got created
     assert os.path.exists(test_state_file)

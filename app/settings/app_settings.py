@@ -82,7 +82,6 @@ class AppSettings(BaseSettings):
     # Chunk size used to split the taxonomy embeddings for similarity computation.
     chunk_size: int = 5000
 
-
     # Application metadata
     git_commit: str = "-"
     git_branch: str = "-"

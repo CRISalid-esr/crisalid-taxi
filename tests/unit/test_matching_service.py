@@ -11,6 +11,7 @@ from app.services.matching.match_store import matches_to_payload
 from app.services.matching.matcher import Match, Matcher
 from app.services.matching.matching_service import MatchingService
 
+
 def test_matcher_returns_empty_when_no_inputs():
     matcher = Matcher(threshold=0.5)
 
@@ -31,11 +32,12 @@ def test_matcher_returns_empty_when_no_inputs():
         == []
     )
 
+
 def test_matcher_threshold_and_rel_type_mapping_domain_field():
     taxonomy_embs = np.array(
         [
-            [1.0, 0.0], # perfect cosine with doc0
-            [0.0, 1.0], # perfect cosine with doc1
+            [1.0, 0.0],  # perfect cosine with doc0
+            [0.0, 1.0],  # perfect cosine with doc1
         ],
         dtype=np.float32,
     )
@@ -44,8 +46,8 @@ def test_matcher_threshold_and_rel_type_mapping_domain_field():
 
     doc_embs = np.array(
         [
-            [1.0, 0.0], # aligns with tax-0
-            [0.0, 1.0], # aligns with tax-1
+            [1.0, 0.0],  # aligns with tax-0
+            [0.0, 1.0],  # aligns with tax-1
         ],
         dtype=np.float32,
     )
@@ -72,6 +74,7 @@ def test_matcher_threshold_and_rel_type_mapping_domain_field():
     assert m1.rel_type == "HAS_FIELD"
     assert pytest.approx(m1.score, rel=1e-6) == 1.0
 
+
 def test_matcher_rel_type_subfield_topic():
     """Test mapping HAS_SUBFIELD and HAS_TOPIC rel_types."""
     taxonomy_levels = ["subfield", "topic"]
@@ -87,12 +90,13 @@ def test_matcher_rel_type_subfield_topic():
     rel_types = {m.rel_type for m in matches}
     assert rel_types == {"HAS_SUBFIELD", "HAS_TOPIC"}
 
+
 def test_matcher_score_below_threshold_returns_no_match():
     """Test that scores < threshold produce no matches."""
     taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
     taxonomy_ids = ["tax-0"]
     taxonomy_levels = ["topic"]
-    doc_embs = np.array([[0.3, 0.95]], dtype=np.float32) # cosine ~0.3
+    doc_embs = np.array([[0.3, 0.95]], dtype=np.float32)  # cosine ~0.3
     doc_embs[0] = doc_embs[0] / np.linalg.norm(doc_embs[0])
     doc_ids = ["doc-0"]
 
@@ -100,10 +104,11 @@ def test_matcher_score_below_threshold_returns_no_match():
     matches = matcher.match(taxonomy_ids, taxonomy_embs, taxonomy_levels, doc_ids, doc_embs)
     assert matches == []
 
+
 def test_matcher_top_k_limits_matches_per_taxonomy_node():
     taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
     taxonomy_ids = ["tax-0"]
-    taxonomy_levels = ["topic"] # HAS_TOPIC
+    taxonomy_levels = ["topic"]  # HAS_TOPIC
 
     doc_embs = np.array(
         [
@@ -130,6 +135,7 @@ def test_matcher_top_k_limits_matches_per_taxonomy_node():
     assert matches[0].rel_type == "HAS_TOPIC"
     assert matches[0].doc_id == "doc-0"
 
+
 def test_matcher_top_k_zero_returns_empty():
     """Test top_k=0 returns no matches regardless of scores."""
     taxonomy_embs = np.array([[1.0, 0.0]], dtype=np.float32)
@@ -141,6 +147,7 @@ def test_matcher_top_k_zero_returns_empty():
     matcher = Matcher(threshold=0.5, top_k=0)
     matches = matcher.match(taxonomy_ids, taxonomy_embs, taxonomy_levels, doc_ids, doc_embs)
     assert matches == []
+
 
 def test_matcher_chunking_produces_same_results_as_single_chunk():
     taxonomy_embs = np.array(
@@ -167,6 +174,7 @@ def test_matcher_chunking_produces_same_results_as_single_chunk():
         (m.concept_uid, m.doc_id, m.rel_type, round(m.score, 6)) for m in r2
     }
 
+
 def test_matches_to_payload_groups_by_doc_and_rounds():
     matches = [
         Match(concept_uid="c1", doc_id="doc-1", rel_type="HAS_DOMAIN", score=0.1234567),
@@ -191,6 +199,7 @@ def test_matches_to_payload_groups_by_doc_and_rounds():
         ("c2", "HAS_FIELD", round(0.9, 6)),
     }
 
+
 def test_matches_to_payload_timestamp_format():
     """Test generated_at follows YYYYMMDDTHHMMSSZ format."""
     matches = [Match(concept_uid="c1", doc_id="d1", rel_type="HAS_TOPIC", score=0.9)]
@@ -199,6 +208,7 @@ def test_matches_to_payload_timestamp_format():
     assert payload["generated_at"].endswith("Z")
     # Should parse without error
     datetime.strptime(payload["generated_at"], "%Y%m%dT%H%M%SZ")
+
 
 @pytest.mark.asyncio
 async def test_matching_service_search_happy_path(monkeypatch):
@@ -236,6 +246,7 @@ async def test_matching_service_search_happy_path(monkeypatch):
         ("tax-1", "docB", "HAS_FIELD"),
     }
 
+
 @pytest.mark.asyncio
 async def test_matching_service_search_empty_texts_returns_empty(monkeypatch):
     import app.services.matching.matching_service as ms
@@ -250,6 +261,7 @@ async def test_matching_service_search_empty_texts_returns_empty(monkeypatch):
 
     service = MatchingService()
     assert await service.search([], []) == []
+
 
 @pytest.mark.asyncio
 async def test_matching_service_search_length_mismatch_raises(monkeypatch):
@@ -266,6 +278,7 @@ async def test_matching_service_search_length_mismatch_raises(monkeypatch):
     service = MatchingService()
     with pytest.raises(ValueError):
         await service.search(["a"], ["id1", "id2"])
+
 
 @pytest.mark.asyncio
 async def test_matching_service_case_insensitive(monkeypatch):
@@ -302,6 +315,7 @@ async def test_matching_service_case_insensitive(monkeypatch):
 
     assert len(res1) == len(res2)
 
+
 def test_embedding_lowercasing_is_applied(monkeypatch):
     from app.services.embeddings.embedding_service import EmbeddingService
 
@@ -316,6 +330,7 @@ def test_embedding_lowercasing_is_applied(monkeypatch):
     service.provider = DummyProvider()
 
     import asyncio
+
     asyncio.run(service.embed_texts(["Machine Learning"]))
 
     assert calls["texts"] == ["machine learning"]

@@ -63,16 +63,12 @@ class MatchingService:
         query_embs = _l2_normalize_matrix(raw_vectors)
 
         logger.info("MatchingService: loading taxonomy matrix from OpenSearch…")
-        tax_ids, tax_embs, tax_types = await self._opensearch.get_all_embeddings(
-            _TAXONOMY_INDEX
-        )
+        tax_ids, tax_embs, tax_types = await self._opensearch.get_all_embeddings(_TAXONOMY_INDEX)
         if not tax_ids:
             logger.warning("Taxonomy index is empty — no matches returned")
             return []
 
-        logger.info(
-            f"MatchingService: running Matcher ({len(tax_ids)} nodes × {len(ids)} docs)…"
-        )
+        logger.info(f"MatchingService: running Matcher ({len(tax_ids)} nodes × {len(ids)} docs)…")
         return self._matcher.match(
             tax_ids, tax_embs, tax_types, ids, query_embs, threshold=similarity_threshold
         )
