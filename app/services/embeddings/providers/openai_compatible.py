@@ -26,7 +26,9 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
-        wait=wait_exponential(multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait)
+        wait=wait_exponential(
+            multiplier=1, min=settings.retry_min_wait, max=settings.retry_max_wait
+        ),
     )
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         headers = {"Content-Type": "application/json"}
