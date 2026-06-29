@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any
 
 from loguru import logger
+from tenacity import retry, stop_after_attempt, wait_exponential
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 
@@ -14,6 +15,7 @@ from app.config import get_app_settings
 class OpenSearchClient:
     """OpenSearch client wrapper."""
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def get_all_embeddings(
         self, index_name: str
     ) -> tuple[list[str], "np.ndarray", list[str]]:
@@ -100,6 +102,7 @@ class OpenSearchClient:
             logger.error(f"Failed to get OpenSearch info: {e}")
             return {}
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
         """Ensure the OpenSearch index exists with a vector-compatible mapping."""
         if self.client.indices.exists(index=index_name):
@@ -126,6 +129,7 @@ class OpenSearchClient:
 
         self.client.indices.create(index=index_name, body=mapping)
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def save_embeddings(self, index_name: str, docs: list[dict]) -> None:
         actions = [
             {

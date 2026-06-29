@@ -1,5 +1,6 @@
 import aiohttp
 from loguru import logger
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.services.embeddings.providers.base import EmbeddingProvider
 
@@ -22,6 +23,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         headers = {"Content-Type": "application/json"}
         if self._api_key:
