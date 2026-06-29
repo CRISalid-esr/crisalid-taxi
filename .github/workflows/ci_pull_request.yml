@@ -47,13 +47,9 @@ jobs:
         run: |
           uv run pytest tests/ -v --cov=app --cov-report=xml || uv run pytest tests/ -v
 
-      # Upload coverage to Codecov
-      # Désactivé temporairement : le rapport coverage.xml est toujours généré
-      # par pytest (--cov-report=xml), mais il n'est plus envoyé à Codecov.
-      #
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v5
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     files: ./coverage.xml
-      #   continue-on-error: true
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+        continue-on-error: true
