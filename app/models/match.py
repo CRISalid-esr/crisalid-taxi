@@ -22,7 +22,8 @@ class MatchRequest(BaseModel):
     )
     similarity_threshold: float | None = Field(
         default=None,
-        description="Optional custom similarity threshold (e.g., 0.52). Overrides the default server setting.",
+        description="Optional custom similarity threshold (e.g., 0.52). "
+                    "Overrides the default server setting.",
         ge=0.0,
         le=1.0,
     )

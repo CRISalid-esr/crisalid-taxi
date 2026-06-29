@@ -106,7 +106,7 @@ class PayloadFormatter:
     # EMBEDDING PREPARATION
     # ========================================================================
 
-    def get_all_embedding_items(
+    def get_all_embedding_items(  # pylint: disable=too-many-positional-arguments
         self,
         domains: list[dict],
         fields: list[dict],

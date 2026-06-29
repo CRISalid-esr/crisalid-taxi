@@ -85,8 +85,9 @@ class MatchingService:
     ) -> dict:
         """Same as :meth:`search` but returns the IKG-ready JSON payload dict."""
         matches = await self.search(texts, ids, similarity_threshold=similarity_threshold)
-        effective_threshold = similarity_threshold if similarity_threshold is not None else self._matcher.threshold
+        effective_threshold = (
+            similarity_threshold if similarity_threshold is not None else self._matcher.threshold
+        )
         return matches_to_payload(
             matches, model=self._model_name, similarity_threshold=effective_threshold
         )
-

@@ -30,7 +30,7 @@ async def _perform_full_check(probe_name: str) -> HealthCheck:
     emb_service = EmbeddingService()
     try:
         embedding_status = "connected" if await emb_service.ping() else "disconnected"
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Embedding service health check failed: %s", e)
         embedding_status = "disconnected"
 

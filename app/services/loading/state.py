@@ -49,9 +49,9 @@ class StateTracker:
         previous_state = {}
         if self._state_file and os.path.exists(self._state_file):
             try:
-                with open(self._state_file, "r") as f:
+                with open(self._state_file, "r", encoding="utf-8") as f:
                     previous_state = json.load(f)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.warning(f"Failed to read state file {self._state_file}: {e}")
         return previous_state
 
@@ -78,8 +78,8 @@ class StateTracker:
         """Persist the current mtimes to the state file."""
         if self._state_file and self._level_mtimes:
             try:
-                with open(self._state_file, "w") as f:
+                with open(self._state_file, "w", encoding="utf-8") as f:
                     json.dump(self._level_mtimes, f, indent=2)
                 logger.info(f"[StateTracker] Successfully updated {self._state_file}")
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error(f"Failed to write state file {self._state_file}: {e}")

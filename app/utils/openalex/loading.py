@@ -36,7 +36,7 @@ def read_ndjson_entity_dir(base_path: str, dir_name: str) -> list[dict[str, Any]
                 except IOError as exc:
                     logger.error(f"Failed to read file {file_path}: {exc}")
         logger.info(f"Loaded {len(records)} records from {dir_name}")
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error(f"Error reading {dir_name}: {exc}")
 
     return records

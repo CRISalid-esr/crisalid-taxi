@@ -43,7 +43,7 @@ class Matcher:
         self.top_k = top_k
         self.chunk_size = chunk_size
 
-    def match(
+    def match(  # pylint: disable=too-many-positional-arguments,too-many-locals
         self,
         taxonomy_ids: list[str],
         taxonomy_embeddings: np.ndarray,
@@ -96,4 +96,3 @@ class Matcher:
             len(doc_ids),
         )
         return results
-

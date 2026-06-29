@@ -35,7 +35,7 @@ def get_app_settings() -> AppSettings:
 
     # Convert string to AppEnvTypes if necessary
     if isinstance(base_settings.app_env, str):
-        app_env = AppEnvTypes(base_settings.app_env.lower())
+        app_env = AppEnvTypes(str(base_settings.app_env).lower())
     else:
         app_env = base_settings.app_env
 

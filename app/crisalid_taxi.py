@@ -11,20 +11,20 @@ from pydantic import ValidationError
 from app.config import get_app_settings
 from app.errors.exceptions import NotFoundError, invalid_entity_error_handler
 from app.routes.api import router as api_router
+from app.routes.health import probes_router
 from app.services.embeddings.embedding_service import EmbeddingService
 from app.services.loading import get_openalex_loader
+from app.services.opensearch_client import get_opensearch_client
+from app.services.pipeline import StartupPipeline
 from app.settings.app_env_types import AppEnvTypes
 
 
 @asynccontextmanager
-async def _lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     """Application lifespan: run the OpenAlex startup pipeline."""
     settings = get_app_settings()
 
     if settings.app_env != AppEnvTypes.TEST:
-        from app.services.pipeline import StartupPipeline
-        from app.services.opensearch_client import get_opensearch_client
-
         pipeline = StartupPipeline(
             loader=get_openalex_loader(),
             embedding_service=EmbeddingService(),
@@ -45,9 +45,6 @@ class CrisalidTaxi(FastAPI):
         settings = get_app_settings()
 
         self.include_router(api_router, prefix=f"{settings.api_prefix}/{settings.api_version}")
-
-        from app.routes.health import probes_router
-
         self.include_router(probes_router)
 
         if settings.app_env != AppEnvTypes.TEST:

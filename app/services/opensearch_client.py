@@ -5,10 +5,9 @@ from loguru import logger
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 
-from app.config import get_app_settings
 import numpy as np
 
-
+from app.config import get_app_settings
 class OpenSearchClient:
     """OpenSearch client wrapper."""
 
@@ -68,7 +67,8 @@ class OpenSearchClient:
         settings = get_app_settings()
 
         logger.debug(
-            f"Connecting to OpenSearch at {settings.opensearch_scheme}://{settings.opensearch_host}:{settings.opensearch_port}"
+            f"Connecting to OpenSearch at {settings.opensearch_scheme}://"
+            f"{settings.opensearch_host}:{settings.opensearch_port}"
         )
         self.client = OpenSearch(
             hosts=[
@@ -88,7 +88,7 @@ class OpenSearchClient:
             result = self.client.ping()
             logger.debug(f"OpenSearch ping result: {result}")
             return bool(result)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"OpenSearch ping failed: {type(e).__name__}: {e}")
             return False
 
@@ -97,7 +97,7 @@ class OpenSearchClient:
         try:
             info = self.client.info()
             return dict(info) if isinstance(info, dict) else {}
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"Failed to get OpenSearch info: {e}")
             return {}
 

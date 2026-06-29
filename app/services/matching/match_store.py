@@ -21,7 +21,11 @@ class InputResultItem:
     matches: list[ConceptMatchItem] = field(default_factory=list)
 
 
-def matches_to_payload(matches: list["Match"], model: str = "", similarity_threshold: float = 0.0) -> dict:
+def matches_to_payload(
+    matches: list["Match"],
+    model: str = "",
+    similarity_threshold: float = 0.0,
+) -> dict:
     """Group a flat Match list into the IKG-ready JSON payload.
 
     Returned structure:
@@ -63,4 +67,3 @@ def matches_to_payload(matches: list["Match"], model: str = "", similarity_thres
         "similarity_threshold": similarity_threshold,
         "results": [asdict(r) for r in result_list],
     }
-

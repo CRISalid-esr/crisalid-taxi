@@ -5,7 +5,7 @@ import json
 from pydantic import ValidationError as PydanticValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY, HTTP_404_NOT_FOUND
+from fastapi import status
 
 
 class ApplicationError(Exception):
@@ -31,11 +31,11 @@ class NotFoundError(ApplicationError):
         super().__init__(message, 404)
 
 
-async def invalid_entity_error_handler(request: Request, exc: Exception) -> JSONResponse:
+async def invalid_entity_error_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handler for invalid entity errors (validation errors)."""
     if isinstance(exc, PydanticValidationError):
         return JSONResponse(
-            status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"detail": json.loads(exc.json())},
         )
     if isinstance(exc, ValidationError):
@@ -44,14 +44,14 @@ async def invalid_entity_error_handler(request: Request, exc: Exception) -> JSON
             content={"detail": exc.message},
         )
     return JSONResponse(
-        status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": "Validation error"},
     )
 
 
-async def not_found_entity_error_handler(request: Request, exc: NotFoundError) -> JSONResponse:
+async def not_found_entity_error_handler(_request: Request, exc: NotFoundError) -> JSONResponse:
     """Handler for not found errors."""
     return JSONResponse(
-        status_code=HTTP_404_NOT_FOUND,
+        status_code=status.HTTP_404_NOT_FOUND,
         content={"detail": exc.message},
     )

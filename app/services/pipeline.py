@@ -101,8 +101,7 @@ class StartupPipeline:
             logger.info("🎉 Pipeline exécuté avec succès et état sauvegardé !")
             return True
 
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.exception(f"❌ Échec de la génération ou indexation des embeddings: {exc}")
 
             return False
-

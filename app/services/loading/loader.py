@@ -92,7 +92,7 @@ class OpenAlexLoader:
 
             self._finalize_load()
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error(f"Failed to load OpenAlex hierarchy: {e}")
             return False
 

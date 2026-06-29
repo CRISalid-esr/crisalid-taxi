@@ -36,4 +36,3 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
     except Exception as exc:
         logger.error("Match failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-

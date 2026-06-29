@@ -47,7 +47,7 @@ def build_subfield_payload(subfield: dict, hierarchy: dict[str, str]) -> dict:
     }
 
 
-def build_topic_payload(
+def build_topic_payload(  # pylint: disable=too-many-positional-arguments
     topic: dict,
     hierarchy: dict[str, str],
     subfield_uri: str,
