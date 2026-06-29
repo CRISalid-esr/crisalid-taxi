@@ -6,7 +6,7 @@ Each environment has specific configuration in dedicated modules.
 
 import importlib
 from functools import lru_cache
-from typing import Dict
+from typing import Dict, cast
 
 from app.settings.app_env_types import AppEnvTypes
 from app.settings.app_settings import AppSettings
@@ -48,7 +48,7 @@ def get_app_settings() -> AppSettings:
     settings_class = getattr(module, class_name)
 
     # Return an instance of the environment-specific settings
-    return settings_class()
+    return cast(AppSettings, settings_class())
 
 
 # Backward compatibility alias

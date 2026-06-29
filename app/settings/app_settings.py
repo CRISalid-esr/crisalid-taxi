@@ -6,11 +6,11 @@ Supports loading configuration from environment variables and YAML files.
 
 import logging
 import os
-from typing import ClassVar, TextIO
+from typing import ClassVar, TextIO, Any, cast
 
 import yaml
 from pydantic import ConfigDict, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.settings.app_env_types import AppEnvTypes
 
@@ -18,7 +18,7 @@ from app.settings.app_env_types import AppEnvTypes
 class AppSettings(BaseSettings):
     """App settings main class with parameters definition."""
 
-    model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     @staticmethod
     def settings_file_path(filename: str) -> str:
@@ -31,7 +31,7 @@ class AppSettings(BaseSettings):
         return os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "..", filename)
 
     @staticmethod
-    def dct_from_yml(yml_file: str) -> dict:
+    def dct_from_yml(yml_file: str) -> dict[str, Any]:
         """
         Load settings from yml file.
 
@@ -39,7 +39,7 @@ class AppSettings(BaseSettings):
         :return: Dictionary loaded from YAML file
         """
         with open(yml_file, encoding="utf8") as file:
-            return yaml.load(file, Loader=yaml.FullLoader)
+            return cast(dict[str, Any], yaml.load(file, Loader=yaml.FullLoader))
 
     @field_validator("app_env", mode="before")
     @classmethod

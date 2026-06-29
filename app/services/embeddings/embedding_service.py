@@ -1,6 +1,6 @@
 import hashlib
 import math
-from typing import Literal
+from typing import Literal, cast
 
 from loguru import logger
 
@@ -45,11 +45,11 @@ class EmbeddingService:
         # bge-m3 is case-sensitive (0.93 cosine between "X" and "x").
         # Lowercasing here ensures queries and taxonomy texts land in the same
         # embedding space regardless of the caller's input casing.
-        return await self.provider.embed_texts([t.lower() for t in texts])
+        return cast(list[list[float]], await self.provider.embed_texts([t.lower() for t in texts]))
 
     async def embed_one(self, text: str) -> list[float]:
         vectors = await self.provider.embed_texts([text.lower()])
-        return vectors[0]
+        return cast(list[float], vectors[0])
 
     async def embed_with_dedup(
         self,

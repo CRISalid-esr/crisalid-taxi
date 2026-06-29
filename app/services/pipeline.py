@@ -57,11 +57,11 @@ class StartupPipeline:
         try:
             # 3. Generate embeddings
             embedded = self._embedding.embed_openalex_items(items)
-            records = await embedded if hasattr(embedded, "__await__") else embedded
+            records = await embedded if hasattr(embedded, "__await__") else embedded # type: ignore
 
             # 3b. Ensure OpenSearch index mapping for vectors
             if records:
-                dims = len(records[0].embedding)
+                dims = len(records[0].embedding) # type: ignore
                 self._opensearch.ensure_embeddings_index(
                     index_name="openalex_embeddings",
                     dims=dims,
@@ -70,12 +70,12 @@ class StartupPipeline:
             # 4. Save to OpenSearch
             docs = [
                 {
-                    "_id": rec.id,
-                    "embedding": rec.embedding,
-                    "type": rec.type,
-                    "display_name": rec.display_name,
+                    "_id": rec.id, # type: ignore
+                    "embedding": rec.embedding, # type: ignore
+                    "type": rec.type, # type: ignore
+                    "display_name": rec.display_name, # type: ignore
                 }
-                for rec in records
+                for rec in records # type: ignore
             ]
 
             self._opensearch.save_embeddings(
@@ -84,9 +84,9 @@ class StartupPipeline:
             )
 
             # Log a preview of the generated embeddings in JSON format
-            logger.info(f"── Résultats OpenAlex au format JSON ({len(records)} générés) ──")
-            for rec in records:
-                rec_dict = rec.model_dump()
+            logger.info(f"── Résultats OpenAlex au format JSON ({len(records)}) ──") # type: ignore
+            for rec in records: # type: ignore
+                rec_dict = rec.model_dump() # type: ignore
                 rec_dict["embedding"] = rec_dict["embedding"][:3] + [
                     f"... ({len(rec_dict['embedding'])} dimensions)"
                 ]

@@ -27,7 +27,8 @@ class OpenSearchClient:
         """
 
         # Query all docs (use scroll). This implementation favors correctness.
-        query = {"query": {"match_all": {}}}
+        from typing import Any
+        query: dict[str, Any] = {"query": {"match_all": {}}}
         response = await asyncio.to_thread(
             self.client.search, index=index_name, body=query, scroll="1m", size=1000
         )
