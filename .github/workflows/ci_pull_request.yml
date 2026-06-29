@@ -10,11 +10,14 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         python-version: ["3.11"]
+
     env:
       EMBEDDING_PROVIDER: sentence_transformer
+
     steps:
       - uses: actions/checkout@v3
 
@@ -33,23 +36,16 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          uv run pylint app/ || true
+          uv run pylint app/
 
       - name: Format check with black
         run: |
-          uv run black --check app/ tests/ || true
+          uv run black --check app/ tests/
 
       - name: Type check with mypy
         run: |
-          uv run mypy app/ tests/ || true
+          uv run mypy app/ tests/
 
-      - name: Run tests with pytest
+      - name: Run tests with coverage (terminal)
         run: |
-          uv run pytest tests/ -v --cov=app --cov-report=xml || uv run pytest tests/ -v
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-        continue-on-error: true
+          uv run pytest tests/ -v --cov=app --cov-report=term-missing
