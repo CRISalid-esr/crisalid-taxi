@@ -25,6 +25,13 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
 
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._session is not None:
+            await self._session.close()
+
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
         wait=wait_exponential(
