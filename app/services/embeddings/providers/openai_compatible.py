@@ -21,6 +21,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         self._api_key = settings.embedding_api_key
         self._model = settings.embedding_api_model
         self._timeout = aiohttp.ClientTimeout(total=settings.embedding_timeout_seconds)
+        self._session = None
 
         logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
 
@@ -38,10 +39,11 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         payload = {"model": self._model, "input": texts}
 
         logger.info(f"   > Envoi de {len(texts)} textes au serveur IA distant...")
-        async with aiohttp.ClientSession(timeout=self._timeout) as session:
-            async with session.post(self._url, json=payload, headers=headers) as response:
-                response.raise_for_status()
-                data = await response.json()
+        if self._session is None:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        async with self._session.post(self._url, json=payload, headers=headers) as response:
+            response.raise_for_status()
+            data = await response.json()
 
         embeddings = data.get("data", [])
         if len(embeddings) != len(texts):
