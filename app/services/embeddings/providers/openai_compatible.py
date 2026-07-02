@@ -35,6 +35,11 @@ class OpenAICompatibleProvider(EmbeddingProvider):
             await self._session.close()
             self._session = None
 
+    async def _get_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        return self._session
+
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
         wait=wait_exponential(
@@ -49,9 +54,8 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         payload = {"model": self._model, "input": texts}
 
         logger.info(f"   > Envoi de {len(texts)} textes au serveur IA distant...")
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(timeout=self._timeout)
-        async with self._session.post(self._url, json=payload, headers=headers) as response:
+        session = await self._get_session()
+        async with session.post(self._url, json=payload, headers=headers) as response:
             response.raise_for_status()
             data = await response.json()
 
