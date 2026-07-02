@@ -62,7 +62,7 @@ class EmbeddingService:
         - compute hashes
         - return embeddings + hashes
         """
-        vectors = await self.provider.embed_texts(texts)
+        vectors = await self.provider.embed_texts([t.lower() for t in texts])
         hashes = [hashlib.sha256(t.encode("utf-8")).hexdigest() for t in texts]
         return vectors, hashes
 
@@ -108,7 +108,7 @@ class EmbeddingService:
 
         for start in range(0, total, batch_size):
             chunk_items = items[start : start + batch_size]
-            chunk_texts = [item["text"] for item in chunk_items]
+            chunk_texts = [item["text"].lower() for item in chunk_items]
             batch_num = start // batch_size + 1
             n_batches = (total + batch_size - 1) // batch_size
 
