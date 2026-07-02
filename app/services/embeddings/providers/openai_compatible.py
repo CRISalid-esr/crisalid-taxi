@@ -26,11 +26,14 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
 
     async def __aenter__(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._session is not None:
             await self._session.close()
+            self._session = None
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
@@ -46,7 +49,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         payload = {"model": self._model, "input": texts}
 
         logger.info(f"   > Envoi de {len(texts)} textes au serveur IA distant...")
-        if self._session is None:
+        if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(timeout=self._timeout)
         async with self._session.post(self._url, json=payload, headers=headers) as response:
             response.raise_for_status()
