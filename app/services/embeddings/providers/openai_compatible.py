@@ -23,7 +23,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         self._timeout = aiohttp.ClientTimeout(total=settings.embedding_timeout_seconds)
         self._session = None
 
-        logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
+        logger.info(f"   > Connection to remote AI server established (Model: '{self._model}')")
 
     async def __aenter__(self):
         if self._session is None:
@@ -53,7 +53,7 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         payload = {"model": self._model, "input": texts}
 
-        logger.info(f"   > Envoi de {len(texts)} textes au serveur IA distant...")
+        logger.info(f"   > Sending {len(texts)} texts to remote AI server...")
         session = await self._get_session()
         async with session.post(self._url, json=payload, headers=headers) as response:
             response.raise_for_status()
@@ -67,6 +67,6 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         sorted_embeddings = sorted(embeddings, key=lambda e: e["index"])
         logger.info(
-            f"   > Réception réussie des {len(sorted_embeddings)} vecteurs depuis le serveur IA."
+            f"   > Successfully received {len(sorted_embeddings)} vectors from AI server."
         )
         return [e["embedding"] for e in sorted_embeddings]
