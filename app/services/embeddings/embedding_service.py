@@ -101,7 +101,7 @@ class EmbeddingService:
         batch_size: int = self.settings.embedding_batch_size
         total = len(items)
         logger.info(
-            f"Étape 4/4 : Initialisation de la connexion à l'IA pour traiter {total} concepts (par lots de {batch_size})"
+            f"Step 4/4: Initializing connection to AI service to process {total} concepts (in batches of {batch_size})"
         )
 
         results: list[EmbeddingRecord] = []
@@ -112,13 +112,13 @@ class EmbeddingService:
             batch_num = start // batch_size + 1
             n_batches = (total + batch_size - 1) // batch_size
 
-            logger.info(
-                f"Étape 4/4 : Génération des vecteurs par l'Intelligence Artificielle (Lot {batch_num} sur {n_batches})"
-            )
+        logger.info(
+            f"Step 4/4: Generating vectors with AI service (Batch {batch_num} of {n_batches})"
+        )
 
-            if chunk_texts:
-                preview_text = chunk_texts[0][:100] + ("..." if len(chunk_texts[0]) > 100 else "")
-                logger.info(f"   > Exemple de texte lu par l'IA : {repr(preview_text)}")
+        if chunk_texts:
+            preview_text = chunk_texts[0][:100] + ("..." if len(chunk_texts[0]) > 100 else "")
+            logger.info(f"   > Example text read by AI: {repr(preview_text)}")
 
             raw_vectors = await self.provider.embed_texts(chunk_texts)
 
@@ -135,6 +135,6 @@ class EmbeddingService:
                 )
 
         logger.info(
-            f"Étape 4/4 : Terminé ! {len(results)}/{total} vecteurs mathématiques ont été générés avec succès."
+            f"Step 4/4: Completed! {len(results)}/{total} mathematical vectors have been successfully generated."
         )
         return results

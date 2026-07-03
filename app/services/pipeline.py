@@ -31,11 +31,11 @@ class StartupPipeline:
         5. Persist to OpenSearch
         6. Save sync state
         """
-        logger.info("🚀 Démarrage du pipeline de chargement et d'indexation OpenAlex...")
+        logger.info("🚀 Starting OpenAlex data loading and indexing pipeline...")
 
         # 1. Load data
         if not self._loader.load():
-            logger.error("❌ Échec du chargement des données OpenAlex")
+            logger.error("❌ Failed to load OpenAlex data")
             return False
 
         # 2. Get changed items
@@ -49,11 +49,11 @@ class StartupPipeline:
 
         if not items:
             logger.info(
-                "✅ Aucun concept n'a été modifié depuis la dernière fois – Étape IA ignorée !"
+                "✅ No concepts have been modified since last time – AI step skipped!"
             )
             return True
 
-        logger.info(f"Envoi de {len(items)} concepts au service d'Intelligence Artificielle...")
+        logger.info(f"Sending {len(items)} concepts to AI service...")
         try:
             # 3. Generate embeddings
             embedded = self._embedding.embed_openalex_items(items)
@@ -84,7 +84,7 @@ class StartupPipeline:
             )
 
             # Log a preview of the generated embeddings in JSON format
-            logger.info(f"── Résultats OpenAlex au format JSON ({len(records)}) ──")  # type: ignore
+            logger.info(f"── OpenAlex results in JSON format ({len(records)}) ──")  # type: ignore
             for rec in records:  # type: ignore
                 rec_dict = rec.model_dump()  # type: ignore
                 rec_dict["embedding"] = rec_dict["embedding"][:3] + [
@@ -95,10 +95,10 @@ class StartupPipeline:
 
             # 5. Persist state
             self._loader.state.save_state()
-            logger.info("🎉 Pipeline exécuté avec succès et état sauvegardé !")
+            logger.info("🎉 Pipeline executed successfully and state saved!")
             return True
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
-            logger.exception(f"❌ Échec de la génération ou indexation des embeddings: {exc}")
+            logger.exception(f"❌ Failed to generate or index embeddings: {exc}")
 
             return False
