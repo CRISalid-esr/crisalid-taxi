@@ -33,7 +33,7 @@ class EmbeddingService:
             # Test avec un texte dummy court pour éviter de consommer des tokens
             await self.provider.embed_texts(["ping"])
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Embedding provider ping failed: %s", e)
             return False
 
@@ -54,7 +54,7 @@ class EmbeddingService:
     async def embed_with_dedup(
         self,
         texts: list[str],
-        previous_hashes: list[str] | None = None,
+        previous_hashes: list[str] | None = None,  # pylint: disable=unused-argument
     ) -> tuple[list[list[float]], list[str]]:
         """
         Optional helper:
@@ -101,7 +101,8 @@ class EmbeddingService:
         batch_size: int = self.settings.embedding_batch_size
         total = len(items)
         logger.info(
-            f"Step 4/4: Initializing connection to AI service to process {total} concepts (in batches of {batch_size})"
+            "Step 4/4: Initializing connection to AI service to process %s concepts "
+            "(in batches of %s)", total, batch_size
         )
 
         results: list[EmbeddingRecord] = []
@@ -135,6 +136,7 @@ class EmbeddingService:
                 )
 
         logger.info(
-            f"Step 4/4: Completed! {len(results)}/{total} mathematical vectors have been successfully generated."
+            "Step 4/4: Completed! %s/%s mathematical vectors have been successfully generated.",
+            len(results), total
         )
         return results
