@@ -21,8 +21,24 @@ class OpenAICompatibleProvider(EmbeddingProvider):
         self._api_key = settings.embedding_api_key
         self._model = settings.embedding_api_model
         self._timeout = aiohttp.ClientTimeout(total=settings.embedding_timeout_seconds)
+        self._session = None
 
-        logger.info(f"   > Connexion au serveur d'IA distant établie (Modèle : '{self._model}')")
+        logger.info(f"   > Connection to remote AI server established (Model: '{self._model}')")
+
+    async def __aenter__(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
+
+    async def _get_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(timeout=self._timeout)
+        return self._session
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
@@ -37,11 +53,11 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         payload = {"model": self._model, "input": texts}
 
-        logger.info(f"   > Envoi de {len(texts)} textes au serveur IA distant...")
-        async with aiohttp.ClientSession(timeout=self._timeout) as session:
-            async with session.post(self._url, json=payload, headers=headers) as response:
-                response.raise_for_status()
-                data = await response.json()
+        logger.info(f"   > Sending {len(texts)} texts to remote AI server...")
+        session = await self._get_session()
+        async with session.post(self._url, json=payload, headers=headers) as response:
+            response.raise_for_status()
+            data = await response.json()
 
         embeddings = data.get("data", [])
         if len(embeddings) != len(texts):
@@ -51,6 +67,6 @@ class OpenAICompatibleProvider(EmbeddingProvider):
 
         sorted_embeddings = sorted(embeddings, key=lambda e: e["index"])
         logger.info(
-            f"   > Réception réussie des {len(sorted_embeddings)} vecteurs depuis le serveur IA."
+            f"   > Successfully received {len(sorted_embeddings)} vectors from AI server."
         )
         return [e["embedding"] for e in sorted_embeddings]
