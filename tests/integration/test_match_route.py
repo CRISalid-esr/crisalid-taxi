@@ -43,7 +43,6 @@ async def test_post_match_returns_payload(client, monkeypatch):
         "model": "dummy-model",
         "query_count": 1,
         "total_matches": 1,
-        "similarity_threshold": 0.52,
         "results": [
             {
                 "id": "doc-1",
@@ -58,7 +57,7 @@ async def test_post_match_returns_payload(client, monkeypatch):
         ],
     }
 
-    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
+    async def fake_search_as_payload(self, texts, ids):
         assert texts == ["t1"]
         assert ids == ["doc-1"]
         return payload
@@ -71,7 +70,6 @@ async def test_post_match_returns_payload(client, monkeypatch):
     assert body["model"] == "dummy-model"
     assert body["query_count"] == 1
     assert body["total_matches"] == 1
-    assert body["similarity_threshold"] == 0.52
     assert body["generated_at"] == "20260101T000Z"
     assert body["results"][0]["id"] == "doc-1"
     assert body["results"][0]["matches"][0]["concept_uid"] == "https://openalex.org/domains/1"
@@ -89,7 +87,6 @@ async def test_post_match_multiple_docs(client, monkeypatch):
         "model": "dummy-model",
         "query_count": 2,
         "total_matches": 3,
-        "similarity_threshold": 0.52,
         "results": [
             {
                 "id": "doc-1",
@@ -105,7 +102,7 @@ async def test_post_match_multiple_docs(client, monkeypatch):
         ],
     }
 
-    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
+    async def fake_search_as_payload(self, texts, ids):
         assert len(texts) == 2
         assert len(ids) == 2
         return payload
@@ -128,7 +125,7 @@ async def test_post_match_service_error_returns_500(client, monkeypatch):
     """Should return 500 when MatchingService raises exception."""
     from app.services.matching import matching_service as ms
 
-    async def fake_search_as_payload(self, texts, ids, similarity_threshold=None):
+    async def fake_search_as_payload(self, texts, ids):
         raise RuntimeError("OpenSearch connection failed")
 
     monkeypatch.setattr(ms.MatchingService, "search_as_payload", fake_search_as_payload)

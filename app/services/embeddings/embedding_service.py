@@ -113,11 +113,13 @@ class EmbeddingService:
             batch_num = start // batch_size + 1
             n_batches = (total + batch_size - 1) // batch_size
 
-        logger.info(
-            f"Step 4/4: Generating vectors with AI service (Batch {batch_num} of {n_batches})"
-        )
+            logger.info(
+                f"Step 4/4: Generating vectors with AI service (Batch {batch_num} of {n_batches})"
+            )
 
-        if chunk_texts:
+            if not chunk_texts:
+                continue
+
             preview_text = chunk_texts[0][:100] + ("..." if len(chunk_texts[0]) > 100 else "")
             logger.info(f"   > Example text read by AI: {repr(preview_text)}")
 

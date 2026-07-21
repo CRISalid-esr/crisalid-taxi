@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
+from dataclasses import dataclass
 from loguru import logger
+
+if TYPE_CHECKING:
+    from app.services.opensearch_client import OpenSearchClient
 
 _LEVEL_TO_REL: dict[str, str] = {
     "domain": "HAS_DOMAIN",
@@ -15,11 +18,42 @@ _LEVEL_TO_REL: dict[str, str] = {
 
 
 def _level_to_rel(level: str) -> str:
+    """
+    Translate a taxonomy level to its IKG relationship type.
+
+    Parameters
+    ----------
+    level : str
+        Taxonomy level name (e.g. ``"domain"``, ``"field"``, ``"subfield"``,
+        ``"topic"``), case-insensitive.
+
+    Returns
+    -------
+    str
+        The corresponding relationship type. Falls back to ``"HAS_DOMAIN"``
+        if `level` is not recognised.
+    """
     return _LEVEL_TO_REL.get(level.lower(), "HAS_DOMAIN")
 
 
 @dataclass
 class Match:
+    """
+    A single retained (concept, document) match.
+
+    Parameters
+    ----------
+    concept_uid : str
+        OpenAlex URI of the matched taxonomy node.
+    doc_id : str
+        Opaque identifier of the matched document.
+    rel_type : str
+        Relationship type (``HAS_DOMAIN`` | ``HAS_FIELD`` | ``HAS_SUBFIELD`` |
+        ``HAS_TOPIC``).
+    score : float
+        Cosine similarity score between the document and the concept.
+    """
+
     concept_uid: str
     doc_id: str
     rel_type: str
@@ -27,72 +61,81 @@ class Match:
 
 
 class Matcher:
-    """Chunked cosine-similarity matcher against the full taxonomy matrix.
+    """
+    Top-k concept matcher backed by OpenSearch's approximate k-NN search.
 
-    Both the taxonomy embeddings and the query embeddings must be L2-normalised
-    before being passed in — the dot product then equals cosine similarity.
+    The nearest-neighbour computation is delegated to the HNSW index
+    already configured on the taxonomy index, instead of loading the full
+    taxonomy matrix and computing cosine similarity in Python.
+
+    Parameters
+    ----------
+    opensearch_client : OpenSearchClient
+        Client used to run the batched k-NN queries.
+    index_name : str
+        Name of the OpenSearch index holding the taxonomy embeddings.
+    top_k : int, default 10
+        Number of nearest concepts retrieved per document.
     """
 
     def __init__(
         self,
-        threshold: float = 0.52,
-        top_k: Optional[int] = None,
-        chunk_size: int = 5000,
+        opensearch_client: "OpenSearchClient",
+        index_name: str,
+        top_k: int = 10,
     ) -> None:
-        self.threshold = threshold
+        self._opensearch = opensearch_client
+        self._index_name = index_name
         self.top_k = top_k
-        self.chunk_size = chunk_size
 
-    def match(  # pylint: disable=too-many-positional-arguments,too-many-locals
+    async def match(
         self,
-        taxonomy_ids: list[str],
-        taxonomy_embeddings: np.ndarray,
-        taxonomy_levels: list[str],
         doc_ids: list[str],
         doc_embeddings: np.ndarray,
-        threshold: float | None = None,
     ) -> list[Match]:
-        """Compute similarity between each taxonomy node and each query document.
-
-        Processes the taxonomy in chunks to keep peak memory bounded.
         """
-        if not taxonomy_ids or not doc_ids:
+        Retrieve the top-k nearest taxonomy concepts for each document.
+
+        Parameters
+        ----------
+        doc_ids : list of str
+            Opaque document identifiers.
+        doc_embeddings : numpy.ndarray
+            L2-normalised query embeddings, shape ``(n_docs, dim)``.
+
+        Returns
+        -------
+        list of Match
+            Matches found across all documents, at most `top_k` per
+            document.
+        """
+        if not doc_ids:
             return []
 
+        doc_embeddings = np.asarray(doc_embeddings, dtype=np.float32)
+
+        per_doc_hits = await self._opensearch.knn_search_batch(
+            index_name=self._index_name,
+            query_vectors=doc_embeddings.tolist(),
+            k=self.top_k,
+        )
+
         results: list[Match] = []
-        n_tax = len(taxonomy_ids)
-        effective_threshold = threshold if threshold is not None else self.threshold
-
-        for chunk_start in range(0, n_tax, self.chunk_size):
-            chunk_end = min(chunk_start + self.chunk_size, n_tax)
-            tax_chunk = taxonomy_embeddings[chunk_start:chunk_end]
-
-            sims = tax_chunk @ doc_embeddings.T  # (chunk, n_docs)
-
-            for local_i in range(chunk_end - chunk_start):
-                tax_id = taxonomy_ids[chunk_start + local_i]
-                level = taxonomy_levels[chunk_start + local_i]
-                row = sims[local_i]
-                rel_type = _level_to_rel(level)
-
-                above = np.where(row >= effective_threshold)[0]
-                if self.top_k is not None and len(above) > self.top_k:
-                    above = above[np.argsort(row[above])[::-1][: self.top_k]]
-
-                for j in above:
-                    results.append(
-                        Match(
-                            concept_uid=tax_id,
-                            doc_id=doc_ids[j],
-                            rel_type=rel_type,
-                            score=float(row[j]),
-                        )
+        for doc_id, hits in zip(doc_ids, per_doc_hits):
+            for concept_uid, cosine_similarity, level in hits:
+                results.append(
+                    Match(
+                        concept_uid=concept_uid,
+                        doc_id=doc_id,
+                        rel_type=_level_to_rel(level),
+                        score=cosine_similarity,
                     )
+                )
 
         logger.debug(
-            "Matcher: %d matches from %d taxa × %d docs",
+            "Matcher: {} matches from top-{} search across {} docs",
             len(results),
-            n_tax,
+            self.top_k,
             len(doc_ids),
         )
         return results

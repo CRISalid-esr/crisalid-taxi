@@ -53,5 +53,4 @@ class MatchPayload(BaseModel):
     total_matches: int = Field(
         description="Total number of (document, concept) pairs above threshold"
     )
-    similarity_threshold: float = Field(description="Threshold used to filter matches")
     results: list[DocumentMatchResult]
