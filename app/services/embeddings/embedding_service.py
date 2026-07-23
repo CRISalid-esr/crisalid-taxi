@@ -101,8 +101,8 @@ class EmbeddingService:
         batch_size: int = self.settings.embedding_batch_size
         total = len(items)
         logger.info(
-            "Step 4/4: Initializing connection to AI service to process %s concepts "
-            "(in batches of %s)", total, batch_size
+            "Step 4/4: Initializing connection to AI service to process {total} concepts "
+            "(in batches of {batch_size})", total, batch_size
         )
 
         results: list[EmbeddingRecord] = []
@@ -138,7 +138,7 @@ class EmbeddingService:
                 )
 
         logger.info(
-            "Step 4/4: Completed! %s/%s mathematical vectors have been successfully generated.",
-            len(results), total
+            "Step 4/4: Completed! {count}/{total} mathematical vectors have been successfully generated.",
+            count=len(results), total=total
         )
         return results
