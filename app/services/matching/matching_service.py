@@ -48,7 +48,7 @@ class MatchingService:
         self._matcher = Matcher(
             opensearch_client=get_opensearch_client(),
             index_name=_TAXONOMY_INDEX,
-            top_k=settings.top_k,
+            top_k=settings.top_k or 10,
         )
 
     async def search(
