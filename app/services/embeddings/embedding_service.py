@@ -102,7 +102,7 @@ class EmbeddingService:
         total = len(items)
         logger.info(
             "Step 4/4: Initializing connection to AI service to process {total} concepts "
-            "(in batches of {batch_size})", total, batch_size
+            "(in batches of {batch_size})", total=total, batch_size=batch_size
         )
 
         results: list[EmbeddingRecord] = []
