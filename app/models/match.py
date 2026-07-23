@@ -56,5 +56,3 @@ class MatchPayload(BaseModel):
         description="Total number of (document, concept) pairs above threshold"
     )
     results: list[DocumentMatchResult] = Field(description="Per-document matches")
-
-
