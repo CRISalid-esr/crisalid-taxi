@@ -49,6 +49,7 @@ class OpenSearchClient:
             min=settings.retry_min_wait,
             max=settings.retry_max_wait,
         ),
+        reraise=True,
     )
     async def get_all_embeddings(
         self, index_name: str
@@ -104,6 +105,7 @@ class OpenSearchClient:
             min=settings.retry_min_wait,
             max=settings.retry_max_wait,
         ),
+        reraise=True,
     )
     async def knn_search_batch(
         self,
@@ -216,6 +218,7 @@ class OpenSearchClient:
             min=settings.retry_min_wait,
             max=settings.retry_max_wait,
         ),
+        reraise=True,
     )
     def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
         """Ensure the OpenSearch index exists with a vector-compatible mapping."""
