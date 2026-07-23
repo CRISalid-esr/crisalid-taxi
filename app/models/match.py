@@ -55,4 +55,6 @@ class MatchPayload(BaseModel):
     total_matches: int = Field(
         description="Total number of (document, concept) pairs above threshold"
     )
+
+
 results: list[DocumentMatchResult]

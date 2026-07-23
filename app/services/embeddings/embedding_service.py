@@ -102,7 +102,9 @@ class EmbeddingService:
         total = len(items)
         logger.info(
             "Step 4/4: Initializing connection to AI service to process {total} concepts "
-            "(in batches of {batch_size})", total=total, batch_size=batch_size
+            "(in batches of {batch_size})",
+            total=total,
+            batch_size=batch_size,
         )
 
         results: list[EmbeddingRecord] = []
@@ -140,6 +142,7 @@ class EmbeddingService:
         logger.info(
             "Step 4/4: Completed! {count}/{total} mathematical vectors have been "
             "successfully generated.",
-            count=len(results), total=total
+            count=len(results),
+            total=total,
         )
         return results

@@ -66,7 +66,5 @@ class OpenAICompatibleProvider(EmbeddingProvider):
             )
 
         sorted_embeddings = sorted(embeddings, key=lambda e: e["index"])
-        logger.info(
-            f"   > Successfully received {len(sorted_embeddings)} vectors from AI server."
-        )
+        logger.info(f"   > Successfully received {len(sorted_embeddings)} vectors from AI server.")
         return [e["embedding"] for e in sorted_embeddings]

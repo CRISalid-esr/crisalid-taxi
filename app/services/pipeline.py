@@ -48,9 +48,7 @@ class StartupPipeline:
         )
 
         if not items:
-            logger.info(
-                "✅ No concepts have been modified since last time – AI step skipped!"
-            )
+            logger.info("✅ No concepts have been modified since last time – AI step skipped!")
             return True
 
         logger.info(f"Sending {len(items)} concepts to AI service...")

@@ -98,9 +98,7 @@ async def test_knn_search_batch_defaults_missing_type_to_domain():
     client = OpenSearchClient.__new__(OpenSearchClient)
     client.client = DummyLowLevelClient(
         responses={
-            "responses": [
-                {"hits": {"hits": [{"_id": "concept-3", "_score": 0.9, "_source": {}}]}}
-            ]
+            "responses": [{"hits": {"hits": [{"_id": "concept-3", "_score": 0.9, "_source": {}}]}}]
         }
     )
 
