@@ -12,6 +12,33 @@ import numpy as np
 from app.config import get_app_settings, settings
 
 
+def _nmslib_score_to_cosine(score: float) -> float:
+    """
+    Convert an OpenSearch nmslib `cosinesimil` score back to cosine similarity.
+
+    With `space_type: cosinesimil`, OpenSearch/nmslib returns
+    ``score = 1 / (1 + distance)`` where ``distance = 1 - cosine``. This
+    inverts that relationship so the rest of the pipeline keeps working
+    with plain cosine similarity values, exactly as before.
+
+    Parameters
+    ----------
+    score : float
+        Raw `_score` returned by OpenSearch for a `knn` query on a
+        `cosinesimil` index.
+
+    Returns
+    -------
+    float
+        The corresponding cosine similarity, in ``[-1, 1]``. Returns
+        ``-1.0`` for a non-positive score, which should not occur in
+        practice but is guarded against to avoid a division by zero.
+    """
+    if score <= 0:
+        return -1.0
+    return 2.0 - 1.0 / score
+
+
 class OpenSearchClient:
     """OpenSearch client wrapper."""
 
@@ -22,6 +49,7 @@ class OpenSearchClient:
             min=settings.retry_min_wait,
             max=settings.retry_max_wait,
         ),
+        reraise=True,
     )
     async def get_all_embeddings(
         self, index_name: str
@@ -70,6 +98,80 @@ class OpenSearchClient:
         # Some stored data might already be L2-normalised, which is fine.
         return ids, emb_matrix, levels
 
+    @retry(
+        stop=stop_after_attempt(settings.retry_max_attempts),
+        wait=wait_exponential(
+            multiplier=1,
+            min=settings.retry_min_wait,
+            max=settings.retry_max_wait,
+        ),
+        reraise=True,
+    )
+    async def knn_search_batch(
+        self,
+        index_name: str,
+        query_vectors: list[list[float]],
+        k: int,
+    ) -> list[list[tuple[str, float, str]]]:
+        """
+        Run a batched approximate k-NN search via the OpenSearch `_msearch` API.
+
+        Delegates the nearest-neighbour computation to the HNSW index
+        configured in :meth:`ensure_embeddings_index`, instead of loading
+        the full taxonomy matrix and computing similarity in Python.
+
+        Parameters
+        ----------
+        index_name : str
+            Name of the OpenSearch index to search.
+        query_vectors : list of list of float
+            One L2-normalised query embedding per document.
+        k : int
+            Number of nearest concepts to retrieve per query vector.
+
+        Returns
+        -------
+        list of list of (str, float, str)
+            One list of hits per input query vector, in the same order,
+            each hit given as ``(concept_uid, cosine_similarity, level)``,
+            sorted by decreasing similarity.
+        """
+        if not query_vectors:
+            return []
+
+        body: list[dict] = []
+        for vector in query_vectors:
+            body.append({"index": index_name})
+            body.append(
+                {
+                    "size": k,
+                    "_source": ["type"],
+                    "query": {"knn": {"embedding": {"vector": vector, "k": k}}},
+                }
+            )
+
+        response = await asyncio.to_thread(self.client.msearch, body=body)
+
+        results: list[list[tuple[str, float, str]]] = []
+        for i, single_response in enumerate(response.get("responses", [])):
+            if "error" in single_response:
+                logger.error(
+                    f"knn_search_batch: query {i} failed on index {index_name!r}: "
+                    f"{single_response['error']}"
+                )
+                results.append([])
+                continue
+
+            hits = single_response.get("hits", {}).get("hits", [])
+            parsed: list[tuple[str, float, str]] = []
+            for hit in hits:
+                cosine = _nmslib_score_to_cosine(float(hit.get("_score", 0.0)))
+                level = str(hit.get("_source", {}).get("type", "domain"))
+                parsed.append((str(hit.get("_id", "")), cosine, level))
+            results.append(parsed)
+
+        return results
+
     def __init__(self):
         """Initialize OpenSearch client."""
         app_settings = get_app_settings()
@@ -116,6 +218,7 @@ class OpenSearchClient:
             min=settings.retry_min_wait,
             max=settings.retry_max_wait,
         ),
+        reraise=True,
     )
     def ensure_embeddings_index(self, index_name: str, dims: int) -> None:
         """Ensure the OpenSearch index exists with a vector-compatible mapping."""
@@ -123,6 +226,11 @@ class OpenSearchClient:
             return
 
         mapping = {
+            "settings": {
+                "index": {
+                    "knn": True,
+                }
+            },
             "mappings": {
                 "properties": {
                     "embedding": {

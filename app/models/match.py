@@ -1,6 +1,6 @@
 """Pydantic models for the /match endpoint."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class MatchInputItem(BaseModel):
@@ -10,6 +10,7 @@ class MatchInputItem(BaseModel):
     @field_validator("text")
     @classmethod
     def text_no_empty(cls, v: str) -> str:
+        """Reject empty or whitespace-only text."""
         if not v or not v.strip():
             raise ValueError("text cannot be empty or whitespace-only")
         return v
@@ -22,13 +23,14 @@ class MatchRequest(BaseModel):
         description="List of inputs containing an id and text to classify.",
         min_length=1,
     )
-    similarity_threshold: float | None = Field(
-        default=None,
-        description="Optional custom similarity threshold (e.g., 0.52). "
-        "Overrides the default server setting.",
-        ge=0.0,
-        le=1.0,
-    )
+
+    @model_validator(mode="after")
+    def ids_are_unique(self) -> "MatchRequest":
+        """Ensure all input ids are unique within the request."""
+        ids = [item.id for item in self.inputs]
+        if len(ids) != len(set(ids)):
+            raise ValueError("inputs must have unique ids")
+        return self
 
 
 class ConceptMatchItem(BaseModel):
@@ -53,5 +55,4 @@ class MatchPayload(BaseModel):
     total_matches: int = Field(
         description="Total number of (document, concept) pairs above threshold"
     )
-    similarity_threshold: float = Field(description="Threshold used to filter matches")
-    results: list[DocumentMatchResult]
+results: list[DocumentMatchResult]

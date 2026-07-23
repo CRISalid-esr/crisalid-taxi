@@ -20,8 +20,9 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
     - **inputs**: list of objects containing id and text
 
     Query embeddings are computed on the fly and are never stored.
+    Matching retrieves the top-k nearest taxonomy concepts per document via
+    approximate k-NN search.
     """
-
     texts = [item.text for item in request.inputs]
     ids = [item.id for item in request.inputs]
 
@@ -29,9 +30,7 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
 
     try:
         service = MatchingService()
-        payload = await service.search_as_payload(
-            texts, ids, similarity_threshold=request.similarity_threshold
-        )
+        payload = await service.search_as_payload(texts, ids)
         return MatchPayload(**payload)
     except Exception as exc:
         logger.error("Match failed: %s", exc)

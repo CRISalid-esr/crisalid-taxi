@@ -33,7 +33,7 @@ class EmbeddingService:
             # Test avec un texte dummy court pour éviter de consommer des tokens
             await self.provider.embed_texts(["ping"])
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Embedding provider ping failed: %s", e)
             return False
 
@@ -54,7 +54,7 @@ class EmbeddingService:
     async def embed_with_dedup(
         self,
         texts: list[str],
-        previous_hashes: list[str] | None = None,
+        _previous_hashes: list[str] | None = None,  # pylint: disable=unused-argument
     ) -> tuple[list[list[float]], list[str]]:
         """
         Optional helper:
@@ -101,7 +101,8 @@ class EmbeddingService:
         batch_size: int = self.settings.embedding_batch_size
         total = len(items)
         logger.info(
-            f"Step 4/4: Initializing connection to AI service to process {total} concepts (in batches of {batch_size})"
+            "Step 4/4: Initializing connection to AI service to process {total} concepts "
+            "(in batches of {batch_size})", total=total, batch_size=batch_size
         )
 
         results: list[EmbeddingRecord] = []
@@ -112,11 +113,13 @@ class EmbeddingService:
             batch_num = start // batch_size + 1
             n_batches = (total + batch_size - 1) // batch_size
 
-        logger.info(
-            f"Step 4/4: Generating vectors with AI service (Batch {batch_num} of {n_batches})"
-        )
+            logger.info(
+                f"Step 4/4: Generating vectors with AI service (Batch {batch_num} of {n_batches})"
+            )
 
-        if chunk_texts:
+            if not chunk_texts:
+                continue
+
             preview_text = chunk_texts[0][:100] + ("..." if len(chunk_texts[0]) > 100 else "")
             logger.info(f"   > Example text read by AI: {repr(preview_text)}")
 
@@ -135,6 +138,8 @@ class EmbeddingService:
                 )
 
         logger.info(
-            f"Step 4/4: Completed! {len(results)}/{total} mathematical vectors have been successfully generated."
+            "Step 4/4: Completed! {count}/{total} mathematical vectors have been "
+            "successfully generated.",
+            count=len(results), total=total
         )
         return results
