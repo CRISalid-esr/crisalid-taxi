@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
-from dataclasses import dataclass
 from loguru import logger
 
 if TYPE_CHECKING:

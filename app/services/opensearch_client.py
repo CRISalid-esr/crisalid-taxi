@@ -246,7 +246,7 @@ class OpenSearchClient:
                     "type": {"type": "keyword"},
                     "display_name": {"type": "text"},
                 }
-            }
+            },
         }
 
         self.client.indices.create(index=index_name, body=mapping)
