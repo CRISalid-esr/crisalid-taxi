@@ -41,14 +41,21 @@ def _l2_normalize_matrix(vectors: list[list[float]]) -> np.ndarray:
 class MatchingService:
     """Orchestrates query embedding, k-NN search against the taxonomy, and payload building."""
 
-    def __init__(self) -> None:
+    def __init__(self, top_k: int | None = None) -> None:
+        """
+        Parameters
+        ----------
+        top_k : int, optional
+            Maximum number of concepts returned per input text. Falls back to
+            the server default (``TOP_K``) when omitted.
+        """
         settings = get_app_settings()
         self._embedding_service = EmbeddingService()
         self._model_name: str = settings.embedding_api_model or ""
         self._matcher = Matcher(
             opensearch_client=get_opensearch_client(),
             index_name=_TAXONOMY_INDEX,
-            top_k=settings.top_k,
+            top_k=top_k if top_k is not None else settings.top_k,
         )
 
     async def search(

@@ -26,10 +26,10 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
     texts = [item.text for item in request.inputs]
     ids = [item.id for item in request.inputs]
 
-    logger.info("POST /match — %d document(s)", len(texts))
+    logger.info("POST /match — {} document(s), top_k={}", len(texts), request.top_k)
 
     try:
-        service = MatchingService()
+        service = MatchingService(top_k=request.top_k)
         payload = await service.search_as_payload(texts, ids)
         return MatchPayload(**payload)
     except Exception as exc:
