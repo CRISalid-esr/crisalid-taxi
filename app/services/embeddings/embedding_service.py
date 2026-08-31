@@ -54,7 +54,7 @@ class EmbeddingService:
     async def embed_with_dedup(
         self,
         texts: list[str],
-        previous_hashes: list[str] | None = None,  # pylint: disable=unused-argument
+        _previous_hashes: list[str] | None = None,  # pylint: disable=unused-argument
     ) -> tuple[list[list[float]], list[str]]:
         """
         Optional helper:
