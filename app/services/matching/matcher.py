@@ -74,19 +74,25 @@ class Matcher:
         Client used to run the batched k-NN queries.
     index_name : str
         Name of the OpenSearch index holding the taxonomy embeddings.
-    top_k : int, default 10
-        Number of nearest concepts retrieved per document.
+    max_topics : int, default 10
+        Maximum number of concepts kept per document, among those above the
+        threshold.
+    similarity_threshold : float, default 0.0
+        Minimum cosine similarity a concept must reach to be kept. 0.0 keeps
+        everything the k-NN returned.
     """
 
     def __init__(
         self,
         opensearch_client: "OpenSearchClient",
         index_name: str,
-        top_k: int = 10,
+        max_topics: int = 10,
+        similarity_threshold: float = 0.0,
     ) -> None:
         self._opensearch = opensearch_client
         self._index_name = index_name
-        self.top_k = top_k
+        self.max_topics = max_topics
+        self.similarity_threshold = similarity_threshold
 
     async def match(
         self,
@@ -94,7 +100,7 @@ class Matcher:
         doc_embeddings: np.ndarray,
     ) -> list[Match]:
         """
-        Retrieve the top-k nearest taxonomy concepts for each document.
+        Retrieve the closest taxonomy concepts for each document.
 
         Parameters
         ----------
@@ -106,8 +112,8 @@ class Matcher:
         Returns
         -------
         list of Match
-            Matches found across all documents, at most `top_k` per
-            document.
+            Matches found across all documents: at most `max_topics` per document,
+            none below `similarity_threshold`.
         """
         if not doc_ids:
             return []
@@ -117,12 +123,17 @@ class Matcher:
         per_doc_hits = await self._opensearch.knn_search_batch(
             index_name=self._index_name,
             query_vectors=doc_embeddings.tolist(),
-            k=self.top_k,
+            k=self.max_topics,
         )
 
         results: list[Match] = []
+        dropped = 0
         for doc_id, hits in zip(doc_ids, per_doc_hits):
-            for concept_uid, cosine_similarity, level in hits:
+            # Phase 1: drop everything below the threshold.
+            above = [hit for hit in hits if hit[1] >= self.similarity_threshold]
+            dropped += len(hits) - len(above)
+            # Phase 2: keep at most max_topics of what survived.
+            for concept_uid, cosine_similarity, level in above[: self.max_topics]:
                 results.append(
                     Match(
                         concept_uid=concept_uid,
@@ -133,9 +144,11 @@ class Matcher:
                 )
 
         logger.debug(
-            "Matcher: {} matches from top-{} search across {} docs",
+            "Matcher: {} kept across {} docs ({} dropped below threshold {}, max_topics={})",
             len(results),
-            self.top_k,
             len(doc_ids),
+            dropped,
+            self.similarity_threshold,
+            self.max_topics,
         )
         return results

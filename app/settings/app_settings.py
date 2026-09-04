@@ -80,12 +80,12 @@ class AppSettings(BaseSettings):
     retry_max_wait: int = 10
 
     # Matching Configuration
-    # Default maximum number of taxonomy concepts returned per input text.
-    # Overridable per request via MatchRequest.top_k. Must stay a valid int:
-    # it is passed straight to OpenSearch as the k-NN `k`.
-    top_k: int = 100
-    # Chunk size used to split the taxonomy embeddings for similarity computation.
-    chunk_size: int = 5000
+    # Minimum cosine similarity a concept must reach to be returned
+    similarity_threshold: float = 0.53
+    # Maximum concepts returned per input text, among those above the threshold.
+    max_topics: int = 100
+    # Minimum characters an input text must have to be matched at all.
+    min_input_length: int = 25
 
     # Application metadata
     git_commit: str = "-"
