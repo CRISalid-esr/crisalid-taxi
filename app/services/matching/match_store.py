@@ -50,6 +50,7 @@ def matches_to_payload(
     matches: list["Match"],
     doc_ids: list[str],
     model: str = "",
+    similarity_threshold: float = 0.53,
 ) -> dict:
     """
     Group a flat Match list into the IKG-ready JSON payload.
@@ -58,12 +59,15 @@ def matches_to_payload(
     ----------
     matches : list of Match
         Flat list of retained (concept, document) matches, at most
-        `top_k` per document.
+        `max_topics` per document.
     doc_ids : list of str
         All document ids submitted in the request, in the order in which
         they should appear in the payload.
     model : str, default ""
         Embedding model name to report in the payload.
+    similarity_threshold : float, default 0.53
+        Threshold applied to this request, echoed in the payload so the caller
+        knows what filtering ran.
 
     Returns
     -------
@@ -91,5 +95,6 @@ def matches_to_payload(
         "model": model,
         "query_count": len(doc_ids),
         "total_matches": len(matches),
+        "similarity_threshold": similarity_threshold,
         "results": [asdict(r) for r in result_list],
     }

@@ -1,13 +1,10 @@
 import asyncio
 from functools import lru_cache
-from typing import Any
 
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
-
-import numpy as np
 
 from app.config import get_app_settings, settings
 
@@ -41,62 +38,6 @@ def _nmslib_score_to_cosine(score: float) -> float:
 
 class OpenSearchClient:
     """OpenSearch client wrapper."""
-
-    @retry(
-        stop=stop_after_attempt(settings.retry_max_attempts),
-        wait=wait_exponential(
-            multiplier=1,
-            min=settings.retry_min_wait,
-            max=settings.retry_max_wait,
-        ),
-        reraise=True,
-    )
-    async def get_all_embeddings(
-        self, index_name: str
-    ) -> tuple[list[str], "np.ndarray", list[str]]:
-        """Load all embeddings from an OpenSearch index.
-
-        Returns
-        -------
-        (ids, embeddings, levels)
-            - ids: concept_uid per record
-            - embeddings: float32 numpy matrix (n, dims)
-            - levels: hierarchy level per record
-        """
-
-        # Query all docs (use scroll). This implementation favors correctness.
-        query: dict[str, Any] = {"query": {"match_all": {}}}
-        response = await asyncio.to_thread(
-            self.client.search, index=index_name, body=query, scroll="1m", size=1000
-        )
-
-        ids: list[str] = []
-        embeddings: list[list[float]] = []
-        levels: list[str] = []
-
-        while True:
-            hits = response.get("hits", {}).get("hits", [])
-            for hit in hits:
-                src = hit.get("_source", {})
-                ids.append(str(hit.get("_id", src.get("_id", ""))))
-                emb = src.get("embedding", [])
-                embeddings.append(list(emb))
-                levels.append(str(src.get("type", "domain")))
-
-            scroll_id = response.get("_scroll_id")
-            if not scroll_id:
-                break
-
-            response = await asyncio.to_thread(self.client.scroll, scroll_id=scroll_id, scroll="1m")
-            if not response.get("hits", {}).get("hits"):
-                break
-
-        if not embeddings:
-            return [], np.zeros((0, 0), dtype=np.float32), []
-
-        emb_matrix = np.asarray(embeddings, dtype=np.float32)
-        # Some stored data might already be L2-normalised, which is fine.
-        return ids, emb_matrix, levels
 
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),

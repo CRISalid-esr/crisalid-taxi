@@ -23,13 +23,24 @@ class MatchRequest(BaseModel):
         description="List of inputs containing an id and text to classify.",
         min_length=1,
     )
-    top_k: int | None = Field(
+    similarity_threshold: float | None = Field(
+        default=None,
+        ge=-1.0,
+        le=1.0,
+        description=(
+            "Minimum cosine similarity a concept must reach to be returned. "
+            "Applied before max_topics. Omit to use the server default "
+            "(SIMILARITY_THRESHOLD)."
+        ),
+    )
+    max_topics: int | None = Field(
         default=None,
         ge=1,
         le=1000,
         description=(
-            "Maximum number of taxonomy concepts returned per input text. "
-            "Omit to use the server default (TOP_K)."
+            "Maximum number of taxonomy concepts returned per input text, "
+            "kept among those above the threshold. Omit to use the server "
+            "default (MAX_TOPICS)."
         ),
     )
 
@@ -52,7 +63,13 @@ class ConceptMatchItem(BaseModel):
 
 class DocumentMatchResult(BaseModel):
     id: str = Field(description="The opaque document identifier supplied in the request")
-    matches: list[ConceptMatchItem]
+    matches: list[ConceptMatchItem] = Field(
+        description=(
+            "Concepts retained for this input. Empty when nothing cleared the "
+            "threshold, and equally when the text was too short to be matched "
+            "at all (see MIN_INPUT_LENGTH)."
+        )
+    )
 
 
 class MatchPayload(BaseModel):
@@ -61,7 +78,8 @@ class MatchPayload(BaseModel):
     generated_at: str = Field(description="UTC timestamp of computation (YYYYMMDDTHHMMSSz)")
     model: str = Field(description="Embedding model used")
     query_count: int = Field(description="Number of documents in the response")
-    total_matches: int = Field(
-        description="Total number of (document, concept) pairs above threshold"
+    total_matches: int = Field(description="Total number of (document, concept) pairs returned")
+    similarity_threshold: float = Field(
+        description="Minimum cosine similarity applied to this request"
     )
     results: list[DocumentMatchResult]
