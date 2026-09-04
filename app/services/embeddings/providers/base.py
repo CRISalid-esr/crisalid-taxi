@@ -12,3 +12,9 @@ class EmbeddingProvider(ABC):
         :param texts: list of text strings to embed
         :return: list of embedding vectors in the same order as the input
         """
+
+    async def close(self) -> None:
+        """Release any resources held by the provider (e.g. open connections).
+
+        Default no-op; providers holding resources should override this.
+        """
