@@ -34,7 +34,7 @@ For more information about installation, development, usage, or internal mechani
     ```
 2.  **Start the entire stack (FastAPI, OpenSearch, Dashboards):**
     ```bash
-    docker-compose up -d
+    docker compose up -d
     ```
 3.  **Test if the API is ready:**
     ```bash

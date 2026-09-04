@@ -31,6 +31,7 @@ async def test_readiness_all_healthy(client: TestClient, monkeypatch, health_mod
 
     mock_emb = MagicMock()
     mock_emb.ping = AsyncMock(return_value=True)
+    mock_emb.close = AsyncMock()
     monkeypatch.setattr(health_module, "EmbeddingService", lambda: mock_emb)
 
     response = client.get("/readiness")
@@ -46,6 +47,7 @@ async def test_readiness_opensearch_down(client: TestClient, monkeypatch, health
 
     mock_emb = MagicMock()
     mock_emb.ping = AsyncMock(return_value=True)
+    mock_emb.close = AsyncMock()
     monkeypatch.setattr(health_module, "EmbeddingService", lambda: mock_emb)
 
     response = client.get("/readiness")
@@ -60,6 +62,7 @@ async def test_readiness_embedding_down(client: TestClient, monkeypatch, health_
 
     mock_emb = MagicMock()
     mock_emb.ping = AsyncMock(return_value=False)
+    mock_emb.close = AsyncMock()
     monkeypatch.setattr(health_module, "EmbeddingService", lambda: mock_emb)
 
     response = client.get("/readiness")
@@ -74,6 +77,7 @@ async def test_readiness_embedding_exception(client: TestClient, monkeypatch, he
 
     mock_emb = MagicMock()
     mock_emb.ping = AsyncMock(side_effect=RuntimeError("API timeout"))
+    mock_emb.close = AsyncMock()
     monkeypatch.setattr(health_module, "EmbeddingService", lambda: mock_emb)
 
     response = client.get("/readiness")

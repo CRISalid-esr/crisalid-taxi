@@ -44,6 +44,11 @@ class OpenAICompatibleProvider(EmbeddingProvider):
             self._session = aiohttp.ClientSession(timeout=self._timeout)
         return self._session  # type: ignore
 
+    async def close(self) -> None:
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+        self._session = None
+
     @retry(
         stop=stop_after_attempt(settings.retry_max_attempts),
         wait=wait_exponential(

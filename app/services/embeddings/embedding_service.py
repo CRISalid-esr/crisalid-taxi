@@ -37,6 +37,10 @@ class EmbeddingService:
             logger.error("Embedding provider ping failed: %s", e)
             return False
 
+    async def close(self) -> None:
+        """Release resources held by the underlying provider."""
+        await self.provider.close()
+
     # ------------------------------------------------------------------
     # Low-level helpers
     # ------------------------------------------------------------------
