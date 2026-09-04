@@ -6,6 +6,7 @@ Supports loading configuration from environment variables and YAML files.
 
 import logging
 import os
+import sys
 from typing import ClassVar, TextIO, Any, cast
 
 import yaml
@@ -54,7 +55,7 @@ class AppSettings(BaseSettings):
     debug: bool = False
     logging_level: int = logging.INFO
     loguru_level: str = "INFO"
-    logger_sink: ClassVar[str | TextIO] = "logs/app.log"
+    logger_sink: ClassVar[str | TextIO] = sys.stderr
 
     # API Configuration
     api_prefix: str = "/api"
