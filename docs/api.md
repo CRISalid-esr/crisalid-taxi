@@ -58,9 +58,9 @@ This is the core of the application. It allows sending one or multiple free text
 
 #### Internal Workflow:
 1.  The provided texts are encoded into vectors (embeddings) via the AI service.
-2.  The application loads the entire OpenAlex embeddings index into memory from OpenSearch (using optimized *scroll* queries).
-3.  An in-memory dot product matrix calculation is performed via **NumPy** to find the cosine similarity of each text with all concepts.
-4.  Results with a similarity value greater than or equal to `SIMILARITY_THRESHOLD` are sorted and grouped.
+2.  An approximate k-NN search is delegated to the HNSW index of OpenSearch (no in-memory matrix is loaded).
+3.  The nearest concepts are returned per input, sorted by decreasing cosine similarity.
+4.  At most `top_k` concepts are returned per input — see the request parameter below.
 
 #### Request Format
 *   **Endpoint:** `POST http://localhost:8000/api/v1/match/`
@@ -69,7 +69,7 @@ This is the core of the application. It allows sending one or multiple free text
     *   `inputs` (list[object]): List of input objects to classify. Each object contains:
         *   `id` (str): Unique identifier corresponding to the text (e.g., an application-specific UUID).
         *   `text` (str): Text to classify. Must not be empty.
-    *   `similarity_threshold` (float, optional): Custom threshold between `0.0` and `1.0` to override the server's default value.
+    *   `top_k` (int, optional): Maximum number of concepts returned per input, between `1` and `1000`. Omit to use the server default (`TOP_K`).
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/match/ \
@@ -79,7 +79,7 @@ curl -X POST http://localhost:8000/api/v1/match/ \
       {"id": "doc-uuid-1", "text": "Machine learning algorithms for quantum computing physics simulations"},
       {"id": "doc-uuid-2", "text": "Taxonomy of soccer training methods"}
     ],
-    "similarity_threshold": 0.65
+    "top_k": 20
   }'
 ```
 
@@ -88,14 +88,13 @@ The response is formatted as a dictionary ready to be inserted into a Knowledge 
 *   `generated_at` (str): UTC Date/time in ISO format (`YYYYMMDDTHHMMSSZ`).
 *   `model` (str): Embedding model used.
 *   `query_count` (int): Number of input documents.
-*   `total_matches` (int): Total number of matches found above the threshold.
-*   `similarity_threshold` (float): Threshold used to filter matches.
+*   `total_matches` (int): Total number of (input, concept) pairs returned.
 *   `results` (list): List of results grouped by input document. Each item contains:
     *   `id` (str): The provided opaque identifier.
     *   `matches` (list): List of matched concepts, sorted by relevance, containing:
         *   `concept_uid` (str): OpenAlex URI of the concept (e.g., `https://openalex.org/topics/1111`).
         *   `rel_type` (str): The taxonomy relationship type (`HAS_DOMAIN`, `HAS_FIELD`, `HAS_SUBFIELD`, `HAS_TOPIC`).
-        *   `value` (float): The cosine similarity score rounded to 6 decimal places.
+        *   `value` (float): The cosine similarity score rounded to 6 decimal places. Consumers filter on this value themselves — the service applies no threshold.
 
 *Example Returned Response:*
 ```json
@@ -104,7 +103,6 @@ The response is formatted as a dictionary ready to be inserted into a Knowledge 
   "model": "bge-m3",
   "query_count": 2,
   "total_matches": 2,
-  "similarity_threshold": 0.65,
   "results": [
     {
       "id": "doc-uuid-1",

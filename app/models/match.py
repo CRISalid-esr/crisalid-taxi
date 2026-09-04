@@ -23,6 +23,15 @@ class MatchRequest(BaseModel):
         description="List of inputs containing an id and text to classify.",
         min_length=1,
     )
+    top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description=(
+            "Maximum number of taxonomy concepts returned per input text. "
+            "Omit to use the server default (TOP_K)."
+        ),
+    )
 
     @model_validator(mode="after")
     def ids_are_unique(self) -> "MatchRequest":
@@ -55,4 +64,4 @@ class MatchPayload(BaseModel):
     total_matches: int = Field(
         description="Total number of (document, concept) pairs above threshold"
     )
-    results: list[DocumentMatchResult] = Field(description="Per-document matches")
+    results: list[DocumentMatchResult]

@@ -61,6 +61,5 @@ For deployment or local development, copy `.env.sample` as `.env`. Below is the 
 
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `SIMILARITY_THRESHOLD` | Minimum cosine similarity score (between -1.0 and 1.0) to validate a classification relationship. | `0.52` |
-| `TOP_K` | Maximum number of matched concepts returned per document. If `null` or undefined, all concepts above the threshold are returned. | `null` |
+| `TOP_K` | Default maximum number of taxonomy concepts returned per input text. Overridable per request via the `top_k` body field. | `100` |
 | `CHUNK_SIZE` | Batch size used during the cosine similarity matrix multiplication to limit Peak Memory usage. | `5000` |

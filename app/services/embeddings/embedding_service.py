@@ -140,8 +140,8 @@ class EmbeddingService:
                 )
 
         logger.info(
-            "Step 4/4: Completed! {count}/{total} mathematical vectors have been "
-            "successfully generated.",
+            "Step 4/4: Completed! {count}/{total} mathematical vectors "
+            "have been successfully generated.",
             count=len(results),
             total=total,
         )

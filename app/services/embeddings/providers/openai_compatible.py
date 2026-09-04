@@ -4,6 +4,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import settings
 from app.services.embeddings.providers.base import EmbeddingProvider
+from app.settings.app_settings import AppSettings
 
 
 class OpenAICompatibleProvider(EmbeddingProvider):
@@ -12,7 +13,10 @@ class OpenAICompatibleProvider(EmbeddingProvider):
     embeddings API (e.g. vLLM, Hugging Face Text Embeddings Inference via /v1/embeddings).
     """
 
-    def __init__(self, settings):
+    #: Lazily created and recreated by `_get_session` when closed.
+    _session: aiohttp.ClientSession | None
+
+    def __init__(self, settings: AppSettings) -> None:
         if not settings.embedding_api_url:
             raise ValueError("EMBEDDING_API_URL is required for the openai_compatible provider")
         if not settings.embedding_api_model:
