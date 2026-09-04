@@ -31,7 +31,7 @@ cp .env.sample .env
 Start the entire stack in the background:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This command will:
@@ -75,7 +75,7 @@ curl http://localhost:9200/
 To stop and remove all containers created by Docker Compose:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
-> 💡 *Note:* To also remove the created volumes (if you wish to completely reset the OpenSearch index), you can add the `-v` flag: `docker-compose down -v`.
+> 💡 *Note:* To also remove the created volumes (if you wish to completely reset the OpenSearch index), you can add the `-v` flag: `docker compose down -v`.
