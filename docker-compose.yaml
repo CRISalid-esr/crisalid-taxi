@@ -1,0 +1,56 @@
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crisalid-taxi-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    volumes:
+      - ./app:/code/app
+      - ${OPENALEX_DATA_HOST_PATH}:${OPENALEX_DATA_PATH}
+    networks:
+      - crisalid-taxi-net
+    depends_on:
+      opensearch:
+        condition: service_started
+
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: crisalid-taxi-opensearch
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      - cluster.name=${OPENSEARCH_CLUSTER_NAME}
+      - node.name=${OPENSEARCH_NODE_NAME}
+      - discovery.type=${OPENSEARCH_DISCOVERY_TYPE}
+      - OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS}
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - plugins.security.disabled=${OPENSEARCH_SECURITY_DISABLED}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - crisalid-taxi-net
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.0
+    container_name: crisalid-taxi-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      - opensearch
+    networks:
+      - crisalid-taxi-net
+
+networks:
+  crisalid-taxi-net:
+    driver: bridge
