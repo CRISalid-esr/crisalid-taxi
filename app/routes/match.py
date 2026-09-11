@@ -20,16 +20,21 @@ async def match_taxonomy(request: MatchRequest) -> MatchPayload:
     - **inputs**: list of objects containing id and text
 
     Query embeddings are computed on the fly and are never stored.
-    Matching retrieves the top-k nearest taxonomy concepts per document via
-    approximate k-NN search.
     """
     texts = [item.text for item in request.inputs]
     ids = [item.id for item in request.inputs]
 
-    logger.info("POST /match — {} document(s), top_k={}", len(texts), request.top_k)
+    logger.info(
+        "POST /match — {} document(s), max_topics={}, threshold={}",
+        len(texts),
+        request.max_topics,
+        request.similarity_threshold,
+    )
 
     try:
-        service = MatchingService(top_k=request.top_k)
+        service = MatchingService(
+            max_topics=request.max_topics, similarity_threshold=request.similarity_threshold
+        )
         payload = await service.search_as_payload(texts, ids)
         return MatchPayload(**payload)
     except Exception as exc:

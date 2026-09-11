@@ -7,6 +7,7 @@ from loguru import logger
 
 from app.config import get_app_settings
 from app.services.embeddings.embedding_service import EmbeddingService
+from app.services.matching.input_filter import screen_inputs
 from app.services.matching.match_store import matches_to_payload
 from app.services.matching.matcher import Match, Matcher
 from app.services.opensearch_client import get_opensearch_client
@@ -41,21 +42,33 @@ def _l2_normalize_matrix(vectors: list[list[float]]) -> np.ndarray:
 class MatchingService:
     """Orchestrates query embedding, k-NN search against the taxonomy, and payload building."""
 
-    def __init__(self, top_k: int | None = None) -> None:
+    def __init__(
+        self, max_topics: int | None = None, similarity_threshold: float | None = None
+    ) -> None:
         """
         Parameters
         ----------
-        top_k : int, optional
+        max_topics : int, optional
             Maximum number of concepts returned per input text. Falls back to
-            the server default (``TOP_K``) when omitted.
+            the server default (``MAX_TOPICS``) when omitted.
+        similarity_threshold : float, optional
+            Minimum cosine similarity, applied before ``max_topics``. Falls back to
+            the server default (``SIMILARITY_THRESHOLD``) when omitted.
         """
         settings = get_app_settings()
+        self._settings = settings
         self._embedding_service = EmbeddingService()
         self._model_name: str = settings.embedding_api_model or ""
+        self._threshold: float = (
+            similarity_threshold
+            if similarity_threshold is not None
+            else settings.similarity_threshold
+        )
         self._matcher = Matcher(
             opensearch_client=get_opensearch_client(),
             index_name=_TAXONOMY_INDEX,
-            top_k=top_k if top_k is not None else settings.top_k,
+            max_topics=max_topics if max_topics is not None else settings.max_topics,
+            similarity_threshold=self._threshold,
         )
 
     async def search(
@@ -116,8 +129,19 @@ class MatchingService:
         Returns
         -------
         dict
-            Payload with one entry per input id, including ids with no
-            match (empty `matches` list), ordered as in `ids`.
+            Payload with one entry per input id, ordered as in `ids`.
         """
-        matches = await self.search(texts, ids)
-        return matches_to_payload(matches, doc_ids=ids, model=self._model_name)
+        screened = screen_inputs(
+            ids,
+            texts,
+            min_input_length=self._settings.min_input_length,
+        )
+        # Only screened-in inputs are embedded: the embedding call is the
+        # expensive part, and a skipped input has no vector to compute.
+        matches = await self.search(screened.texts, screened.ids)
+        return matches_to_payload(
+            matches,
+            doc_ids=ids,
+            model=self._model_name,
+            similarity_threshold=self._threshold,
+        )

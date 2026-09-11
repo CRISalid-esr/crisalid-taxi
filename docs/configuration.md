@@ -61,5 +61,8 @@ For deployment or local development, copy `.env.sample` as `.env`. Below is the 
 
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `TOP_K` | Default maximum number of taxonomy concepts returned per input text. Overridable per request via the `top_k` body field. | `100` |
-| `CHUNK_SIZE` | Batch size used during the cosine similarity matrix multiplication to limit Peak Memory usage. | `5000` |
+| `SIMILARITY_THRESHOLD` | Minimum cosine similarity a concept must reach to be returned. Applied **before** `MAX_TOPICS`: concepts below it are dropped, then at most `MAX_TOPICS` of the remainder are kept. Overridable per request via the `similarity_threshold` body field. Recalibrate when changing the embedding model or the k-NN engine. | `0.53` |
+| `MAX_TOPICS` | Default maximum number of taxonomy concepts returned per input text, among those above the threshold. Overridable per request via the `max_topics` body field. | `100` |
+| `MIN_INPUT_LENGTH` | Minimum characters an input text must have to be matched. Shorter inputs are never embedded and come back with an empty match list. | `25` |
+
+The index uses the nmslib engine (`cosinesimil`), and `_nmslib_score_to_cosine` converts its scores back to cosine similarity. nmslib is deprecated in OpenSearch and removed in 3.x: migrating to faiss means changing the mapping and that conversion together, then recalibrating `SIMILARITY_THRESHOLD` — faiss reports similarity on a different scale.

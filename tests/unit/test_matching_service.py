@@ -42,7 +42,7 @@ class DummyOpenSearchClient:
 async def test_matcher_returns_empty_when_no_doc_ids():
     """No doc_ids means no k-NN search should even be attempted."""
     opensearch = DummyOpenSearchClient(hits_by_call=[])
-    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", top_k=5)
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=5)
 
     matches = await matcher.match([], np.zeros((0, 3), dtype=np.float32))
 
@@ -59,7 +59,7 @@ async def test_matcher_maps_hits_to_matches_with_rel_type():
             [("tax-field", 0.82, "field")],
         ]
     )
-    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", top_k=1)
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=1)
 
     doc_embs = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     matches = await matcher.match(["doc-0", "doc-1"], doc_embs)
@@ -79,7 +79,7 @@ async def test_matcher_rel_type_subfield_topic():
             [("tax-t", 0.9, "topic")],
         ]
     )
-    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", top_k=1)
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=1)
 
     doc_embs = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     matches = await matcher.match(["d0", "d1"], doc_embs)
@@ -92,7 +92,7 @@ async def test_matcher_rel_type_subfield_topic():
 async def test_matcher_unknown_level_falls_back_to_has_domain():
     """An unrecognised level string falls back to HAS_DOMAIN rather than raising."""
     opensearch = DummyOpenSearchClient(hits_by_call=[[("tax-x", 0.7, "unknown_level")]])
-    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", top_k=1)
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=1)
 
     matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
 
@@ -100,10 +100,10 @@ async def test_matcher_unknown_level_falls_back_to_has_domain():
 
 
 @pytest.mark.asyncio
-async def test_matcher_forwards_top_k_and_index_name_to_opensearch():
-    """top_k and index_name configured on the Matcher are passed through to the client."""
+async def test_matcher_forwards_max_topics_and_index_name_to_opensearch():
+    """max_topics and index_name configured on the Matcher are passed through to the client."""
     opensearch = DummyOpenSearchClient(hits_by_call=[[]])
-    matcher = Matcher(opensearch_client=opensearch, index_name="my_custom_index", top_k=7)
+    matcher = Matcher(opensearch_client=opensearch, index_name="my_custom_index", max_topics=7)
 
     await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
 
@@ -116,7 +116,7 @@ async def test_matcher_forwards_top_k_and_index_name_to_opensearch():
 async def test_matcher_no_hits_returns_empty_list():
     """A document with no nearest neighbours above OpenSearch's own cutoff yields no Match."""
     opensearch = DummyOpenSearchClient(hits_by_call=[[]])
-    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", top_k=5)
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=5)
 
     matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
 
@@ -187,7 +187,9 @@ async def test_matching_service_search_happy_path(monkeypatch):
     import app.services.matching.matching_service as ms
 
     class DummySettings:
-        top_k = 10
+        max_topics = 10
+        similarity_threshold = 0.0
+        min_input_length = 0
         embedding_api_model = ""
 
     monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
@@ -223,7 +225,9 @@ async def test_matching_service_search_empty_texts_returns_empty(monkeypatch):
     import app.services.matching.matching_service as ms
 
     class DummySettings:
-        top_k = 10
+        max_topics = 10
+        similarity_threshold = 0.0
+        min_input_length = 0
         embedding_api_model = ""
 
     monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
@@ -239,7 +243,9 @@ async def test_matching_service_search_length_mismatch_raises(monkeypatch):
     import app.services.matching.matching_service as ms
 
     class DummySettings:
-        top_k = 10
+        max_topics = 10
+        similarity_threshold = 0.0
+        min_input_length = 0
         embedding_api_model = ""
 
     monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
@@ -256,7 +262,9 @@ async def test_matching_service_search_as_payload_includes_all_ids(monkeypatch):
     import app.services.matching.matching_service as ms
 
     class DummySettings:
-        top_k = 10
+        max_topics = 10
+        similarity_threshold = 0.0
+        min_input_length = 0
         embedding_api_model = "bge-m3"
 
     monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
@@ -302,3 +310,238 @@ def test_embedding_lowercasing_is_applied(monkeypatch):
     asyncio.run(service.embed_texts(["Machine Learning"]))
 
     assert calls["texts"] == ["machine learning"]
+
+
+@pytest.mark.asyncio
+async def test_matcher_drops_hits_below_threshold():
+    """Concepts scoring under similarity_threshold never reach the results."""
+    opensearch = DummyOpenSearchClient(
+        hits_by_call=[[("tax-topic", 0.61, "topic"), ("tax-far", 0.34, "topic")]]
+    )
+    matcher = Matcher(
+        opensearch_client=opensearch,
+        index_name="openalex_embeddings",
+        max_topics=10,
+        similarity_threshold=0.5,
+    )
+
+    matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
+
+    assert [(m.concept_uid, m.score) for m in matches] == [("tax-topic", 0.61)]
+
+
+@pytest.mark.asyncio
+async def test_matcher_threshold_is_applied_before_max_topics():
+    """
+    max_topics caps what survived the threshold; it never backfills below it.
+
+    Three hits, only two above the threshold, max_topics=3: the third must stay out
+    even though there is room for it. This is what distinguishes a threshold
+    applied first from one applied after truncation.
+    """
+    opensearch = DummyOpenSearchClient(
+        hits_by_call=[
+            [("tax-a", 0.90, "topic"), ("tax-b", 0.55, "topic"), ("tax-c", 0.20, "topic")]
+        ]
+    )
+    matcher = Matcher(
+        opensearch_client=opensearch,
+        index_name="openalex_embeddings",
+        max_topics=3,
+        similarity_threshold=0.5,
+    )
+
+    matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
+
+    assert [m.concept_uid for m in matches] == ["tax-a", "tax-b"]
+
+
+@pytest.mark.asyncio
+async def test_matcher_max_topics_truncates_hits_above_threshold():
+    """When more concepts pass the threshold than max_topics allows, the best ones are kept."""
+    opensearch = DummyOpenSearchClient(
+        hits_by_call=[
+            [("tax-a", 0.90, "topic"), ("tax-b", 0.80, "topic"), ("tax-c", 0.70, "topic")]
+        ]
+    )
+    matcher = Matcher(
+        opensearch_client=opensearch,
+        index_name="openalex_embeddings",
+        max_topics=2,
+        similarity_threshold=0.5,
+    )
+
+    matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
+
+    assert [m.concept_uid for m in matches] == ["tax-a", "tax-b"]
+
+
+@pytest.mark.asyncio
+async def test_matcher_default_threshold_keeps_every_hit():
+    """The default threshold is neutral, so a Matcher built without one filters nothing."""
+    opensearch = DummyOpenSearchClient(
+        hits_by_call=[[("tax-a", 0.42, "topic"), ("tax-b", 0.05, "topic")]]
+    )
+    matcher = Matcher(opensearch_client=opensearch, index_name="openalex_embeddings", max_topics=10)
+
+    matches = await matcher.match(["doc-0"], np.array([[1.0, 0.0]], dtype=np.float32))
+
+    assert len(matches) == 2
+
+
+def test_matching_service_threshold_falls_back_to_settings(monkeypatch):
+    """Omitting similarity_threshold uses the server default."""
+    import app.services.matching.matching_service as ms
+
+    class DummySettings:
+        max_topics = 10
+        similarity_threshold = 0.5
+        min_input_length = 0
+        embedding_api_model = "bge-m3"
+
+    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
+    monkeypatch.setattr(ms, "get_opensearch_client", lambda: object())
+
+    service = MatchingService()
+
+    assert service._matcher.similarity_threshold == 0.5
+
+
+def test_matching_service_threshold_can_be_overridden_per_request(monkeypatch):
+    """An explicit similarity_threshold wins over the server default, including 0.0."""
+    import app.services.matching.matching_service as ms
+
+    class DummySettings:
+        max_topics = 10
+        similarity_threshold = 0.5
+        min_input_length = 0
+        embedding_api_model = "bge-m3"
+
+    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
+    monkeypatch.setattr(ms, "get_opensearch_client", lambda: object())
+
+    assert MatchingService(similarity_threshold=0.8)._matcher.similarity_threshold == 0.8
+    # 0.0 is falsy but meaningful: "return everything k-NN found".
+    assert MatchingService(similarity_threshold=0.0)._matcher.similarity_threshold == 0.0
+
+
+@pytest.mark.asyncio
+async def test_matching_service_payload_echoes_threshold(monkeypatch):
+    """The payload reports the threshold that was actually applied."""
+    import app.services.matching.matching_service as ms
+
+    class DummySettings:
+        max_topics = 10
+        similarity_threshold = 0.5
+        min_input_length = 0
+        embedding_api_model = "bge-m3"
+
+    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
+    monkeypatch.setattr(ms, "get_opensearch_client", lambda: object())
+
+    service = MatchingService(similarity_threshold=0.7)
+
+    class DummyEmbeddingService:
+        async def embed_texts(self, texts):
+            return [[1.0, 0.0]]
+
+    class DummyMatcher:
+        async def match(self, doc_ids, doc_embeddings):
+            return []
+
+    monkeypatch.setattr(service, "_embedding_service", DummyEmbeddingService())
+    monkeypatch.setattr(service, "_matcher", DummyMatcher())
+
+    payload = await service.search_as_payload(["t1"], ["doc1"])
+
+    assert payload["similarity_threshold"] == 0.7
+
+
+# ── screening inside the service ─────────────────────────────────────────────
+
+
+def _service_with(monkeypatch, **overrides):
+    """Build a MatchingService whose settings are the given stub values."""
+    import app.services.matching.matching_service as ms
+
+    class DummySettings:
+        max_topics = 10
+        similarity_threshold = 0.53
+        min_input_length = 25
+        embedding_api_model = "bge-m3"
+
+    for key, value in overrides.items():
+        setattr(DummySettings, key, value)
+    monkeypatch.setattr(ms, "get_app_settings", lambda: DummySettings())
+    monkeypatch.setattr(ms, "get_opensearch_client", lambda: object())
+    return MatchingService()
+
+
+class _RecordingEmbeddingService:
+    """Records what was embedded, so skipped inputs can be proven absent."""
+
+    def __init__(self):
+        self.embedded: list[str] = []
+
+    async def embed_texts(self, texts):
+        self.embedded.extend(texts)
+        return [[1.0, 0.0] for _ in texts]
+
+
+class _NoMatchMatcher:
+    async def match(self, doc_ids, doc_embeddings):
+        return []
+
+
+@pytest.mark.asyncio
+async def test_short_input_is_reported_empty_and_never_embedded(monkeypatch):
+    """Embedding is the expensive step; a screened-out input must not reach it."""
+    service = _service_with(monkeypatch)
+    embeddings = _RecordingEmbeddingService()
+    monkeypatch.setattr(service, "_embedding_service", embeddings)
+    monkeypatch.setattr(service, "_matcher", _NoMatchMatcher())
+
+    long_text = "Machine learning algorithms for quantum computing simulations"
+    payload = await service.search_as_payload(["tiny", long_text], ["short-doc", "long-doc"])
+
+    assert embeddings.embedded == [long_text]
+    by_id = {r["id"]: r for r in payload["results"]}
+    assert by_id["short-doc"]["matches"] == []
+    assert by_id["long-doc"]["matches"] == []
+
+
+@pytest.mark.asyncio
+async def test_result_carries_no_skip_marker(monkeypatch):
+    """
+    A screened-out input looks exactly like one that matched nothing.
+
+    Consumers act the same way on both, so the response stays a plain list of
+    matches with no extra field to interpret.
+    """
+    service = _service_with(monkeypatch)
+    monkeypatch.setattr(service, "_embedding_service", _RecordingEmbeddingService())
+    monkeypatch.setattr(service, "_matcher", _NoMatchMatcher())
+
+    payload = await service.search_as_payload(["tiny"], ["short-doc"])
+
+    assert payload["results"][0] == {"id": "short-doc", "matches": []}
+
+
+@pytest.mark.asyncio
+async def test_every_input_is_reported_even_when_all_are_screened_out(monkeypatch):
+    """The response keeps one entry per requested id, in request order."""
+    service = _service_with(monkeypatch)
+    monkeypatch.setattr(service, "_embedding_service", _RecordingEmbeddingService())
+    monkeypatch.setattr(service, "_matcher", _NoMatchMatcher())
+
+    payload = await service.search_as_payload(["a", "b"], ["doc-1", "doc-2"])
+
+    assert [r["id"] for r in payload["results"]] == ["doc-1", "doc-2"]
+    assert payload["query_count"] == 2
+
+
+def test_max_topics_falls_back_to_settings(monkeypatch):
+    """The renamed setting is the one that governs."""
+    service = _service_with(monkeypatch, max_topics=7)
+
+    assert service._matcher.max_topics == 7
