@@ -49,7 +49,7 @@ For deployment or local development, copy `.env.sample` as `.env`. Below is the 
 | Variable | Description | Default / Example |
 | :--- | :--- | :--- |
 | `EMBEDDING_PROVIDER` | Engine used to generate embeddings (`openai_compatible` or `sentence_transformer`). *Note: only `openai_compatible` is currently implemented.* | `openai_compatible` |
-| `EMBEDDING_API_URL` | Endpoint of the OpenAI-compatible embeddings API. The application automatically appends `/embeddings` to this URL. | `https://rag-api.ilaas.fr/v1` |
+| `EMBEDDING_API_URL` | Base URL of the OpenAI-compatible embeddings server. The application automatically appends `/v1/embeddings` to this URL (same convention as the other CRISalid services). | `https://rag-api.ilaas.fr` |
 | `EMBEDDING_API_KEY` | API key (Bearer token) used for authentication with the remote service. | `<ilaas-api-key>` |
 | `EMBEDDING_API_MODEL` | Embedding model identifier (e.g. `bge-m3`). | `bge-m3` |
 | `EMBEDDING_TIMEOUT_SECONDS` | Maximum timeout duration for embedding generation requests (seconds). | `30` |

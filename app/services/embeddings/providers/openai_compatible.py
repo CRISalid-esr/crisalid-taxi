@@ -21,7 +21,9 @@ class OpenAICompatibleProvider(EmbeddingProvider):
             raise ValueError("EMBEDDING_API_URL is required for the openai_compatible provider")
         if not settings.embedding_api_model:
             raise ValueError("EMBEDDING_API_MODEL is required for the openai_compatible provider")
-        self._url = settings.embedding_api_url.rstrip("/") + "/embeddings"
+        # Same convention as the other CRISalid services sharing EMBEDDING_API_URL:
+        # the variable holds the server base URL, the /v1/embeddings path is appended here.
+        self._url = settings.embedding_api_url.rstrip("/") + "/v1/embeddings"
         self._api_key = settings.embedding_api_key
         self._model = settings.embedding_api_model
         self._timeout = aiohttp.ClientTimeout(total=settings.embedding_timeout_seconds)
